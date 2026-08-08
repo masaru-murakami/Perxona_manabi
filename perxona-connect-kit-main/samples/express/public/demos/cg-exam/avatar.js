@@ -53,6 +53,32 @@ let motions = [];
 let ready = false;
 let audioEnabled = false;
 let initPromise;
+let currentVoiceId;
+
+// A voice pinned to one language (e.g. "(Japanese only)") cannot speak the
+// other language natively — it just reads the text with the wrong accent,
+// which is what happened when the exam's language toggle switched to
+// English but the avatar kept its Japanese-only voice. Pick one voice per
+// UI language instead; ensureVoice() re-initializes the Presenter with the
+// right one on demand (cheap: same avatar/scene, so assets are already
+// cached — only the voice/TTS config actually changes).
+const VOICE_BY_LANG = {
+  ja: "01KT9NE031K3MWGCXMYZ078TKD", // Female - cheerful and clear (Japanese only)
+  en: "01KZFF41AV1D4FJNM81PZSSX6E", // Female - warm and cheerful (multilingual)
+};
+
+// "Japanese accent" mode is the fun opposite of the fix above: it forces the
+// Japanese-only voice on regardless of UI language, so English lines get
+// read back in a Japanese accent (Japanese lines just sound normal). Off by
+// default — the toggle in the panel is what turns it on.
+let accentMode = false;
+let lastLang = "ja";
+const accentToggle = document.querySelector("#avatar-accent-toggle");
+
+function voiceForLang(lang) {
+  if (accentMode) return VOICE_BY_LANG.ja;
+  return VOICE_BY_LANG[lang] ?? VOICE_BY_LANG.ja;
+}
 
 function setStatus(text) {
   statusEl.textContent = text ?? "";
@@ -130,17 +156,49 @@ async function init() {
     });
 
     setStatus("Starting avatar…");
+    // Read the quiz's current language (it sets <html lang> in applyStatic())
+    // so the very first initialize() already picks the right voice instead
+    // of starting in Japanese and immediately re-initializing for English.
+    const initialLang = document.documentElement.lang === "en" ? "en" : "ja";
+    lastLang = initialLang;
+    currentVoiceId = voiceForLang(initialLang) ?? voiceId ?? undefined;
     const { connect_token } = await requestJson("/api/connect-token");
     await presenter.initialize(connect_token, {
       avatarId,
       sceneId,
-      voiceId: voiceId || undefined,
+      voiceId: currentVoiceId,
     });
   })().catch((error) => {
     console.error("[avatar] init failed", error);
     setStatus(`Avatar unavailable: ${error.message}`);
   });
   return initPromise;
+}
+
+// Switches the Presenter to the voice for `lang` if it isn't already active.
+// Called at the top of every hook, after init(), so the very first line the
+// avatar speaks in a session already uses the right voice.
+async function ensureVoice(lang) {
+  lastLang = lang;
+  await init();
+  if (!ready) return;
+  const voiceId = voiceForLang(lang);
+  if (voiceId === currentVoiceId) return;
+  try {
+    ready = false;
+    panel.classList.remove("ready");
+    setStatus(lang === "ja" ? "音声を切り替え中…" : "Switching voice…");
+    const { avatarId, sceneId } = config.defaults ?? {};
+    const { connect_token } = await requestJson("/api/connect-token");
+    await presenter.initialize(connect_token, { avatarId, sceneId, voiceId });
+    currentVoiceId = voiceId;
+    // The presenter re-fires PRESENTER_STATUS → "Ready" once the swapped
+    // target finishes loading; the listener registered in init() sets
+    // ready/panel.classList/status back at that point.
+  } catch (error) {
+    console.error("[avatar] voice switch failed", error);
+    setStatus(`Voice switch failed: ${error.message}`);
+  }
 }
 
 async function ensureAudio() {
@@ -214,20 +272,20 @@ const MOTION_KEYWORDS = {
 
 async function onStart(lang) {
   await ensureAudio();
-  await init();
+  await ensureVoice(lang);
   const motionId = pickMotion(MOTION_KEYWORDS.greeting);
   await speak(withMotion(pick(GREETINGS[lang] ?? GREETINGS.ja), motionId));
 }
 
 async function onReveal(_item, ok, lang) {
-  await init();
+  await ensureVoice(lang);
   const motionId = pickMotion(ok ? MOTION_KEYWORDS.correct : MOTION_KEYWORDS.wrong);
   const line = pick(ok ? (CORRECT_LINES[lang] ?? CORRECT_LINES.ja) : (WRONG_LINES[lang] ?? WRONG_LINES.ja));
   await speak(withMotion(line, motionId));
 }
 
 async function explain(item, ok, lang, domainName) {
-  await init();
+  await ensureVoice(lang);
   say(lang === "ja" ? "考え中…" : "Thinking…");
   if (!config || config.mock || !config.chat) {
     say(
@@ -277,7 +335,7 @@ async function explain(item, ok, lang, domainName) {
 }
 
 async function onResult(result, domains, lang) {
-  await init();
+  await ensureVoice(lang);
   say(lang === "ja" ? "総評を準備しています…" : "Preparing your summary…");
   if (!config || config.mock || !config.chat) {
     say(
@@ -325,6 +383,17 @@ async function onResult(result, domains, lang) {
     );
   }
 }
+
+const ACCENT_DEMO_LINE = {
+  ja: "こんな感じでどうかな?",
+  en: "How does this sound now?",
+};
+
+accentToggle?.addEventListener("change", async () => {
+  accentMode = accentToggle.checked;
+  await ensureVoice(lastLang);
+  await speak(ACCENT_DEMO_LINE[lastLang] ?? ACCENT_DEMO_LINE.ja);
+});
 
 window.CGExamAvatar = { onStart, onReveal, explain, onResult };
 init();

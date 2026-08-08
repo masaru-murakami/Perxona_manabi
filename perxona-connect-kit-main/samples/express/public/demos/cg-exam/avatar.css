@@ -51,6 +51,25 @@
   display: none;
 }
 
+.avatar-accent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 6px 8px;
+  background: #ffffff;
+  border: 1px solid #c9ceda;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #444b5c;
+  cursor: pointer;
+  user-select: none;
+}
+
+.avatar-accent input {
+  margin: 0;
+}
+
 .avatar-bubble {
   margin: 8px 0 0;
   padding: 10px 12px;

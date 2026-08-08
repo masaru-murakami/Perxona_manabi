@@ -264,6 +264,10 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
     <sv-presenter class="avatar-presenter"></sv-presenter>
     <p class="avatar-status" id="avatar-status">Avatar loading…</p>
   </div>
+  <label class="avatar-accent">
+    <input type="checkbox" id="avatar-accent-toggle">
+    <span id="avatar-accent-label">Japanese accent</span>
+  </label>
   <p class="avatar-bubble" id="avatar-bubble" hidden></p>
 </div>
 
@@ -310,7 +314,7 @@ ja:{
  copyDom:"---- 領域別 ----",
  footer:"本模擬試験はCG-ARTS協会の公式問題ではありません。出題形式・分野構成を参考に作成した学習用教材です。",
  domains:["映像制作のワークフロー","デザイン・色彩・2次元CG","撮影・構図・カメラワーク","モデリング","マテリアル・テクスチャ","ライティング","アニメーション","レンダリング","合成・映像編集","知的財産権"],
- short:["ワークフロー","色彩・2DCG","構図・カメラ","モデリング","マテリアル","ライティング","アニメーション","レンダリング","合成・編集","知的財産権"]
+ domainsShort:["ワークフロー","色彩・2DCG","構図・カメラ","モデリング","マテリアル","ライティング","アニメーション","レンダリング","合成・編集","知的財産権"]
 },
 en:{
  htmlLang:"en", marks:"ABCD",
@@ -350,7 +354,7 @@ en:{
  copyDom:"---- by subject area ----",
  footer:"These are not official CG-ARTS questions. This is study material modelled on the format and subject breakdown of the real exam.",
  domains:["Production workflow","Design, color and 2D CG","Camera and composition","Modeling","Materials and texturing","Lighting","Animation","Rendering","Compositing and editing","Intellectual property"],
- short:["Workflow","Color / 2D","Camera","Modeling","Materials","Lighting","Animation","Rendering","Compositing","IP rights"]
+ domainsShort:["Workflow","Color / 2D","Camera","Modeling","Materials","Lighting","Animation","Rendering","Compositing","IP rights"]
 }};
 
 let lang="en";
@@ -590,7 +594,7 @@ function drawRadar(dom){
     const p=pt(i,1.17);let anchor="middle";
     if(p[0]>cx+8)anchor="start";
     if(p[0]<cx-8)anchor="end";
-    s+='<text x="'+p[0].toFixed(1)+'" y="'+(p[1]+3).toFixed(1)+'" text-anchor="'+anchor+'">'+t.short[i]+'</text>';
+    s+='<text x="'+p[0].toFixed(1)+'" y="'+(p[1]+3).toFixed(1)+'" text-anchor="'+anchor+'">'+t.domainsShort[i]+'</text>';
   }
   s+='<text class="passlabel" x="'+cx+'" y="'+(cy-R*0.7-6)+'" text-anchor="middle">'+t.passLabel+'</text>';
   $("radar").innerHTML=s;
