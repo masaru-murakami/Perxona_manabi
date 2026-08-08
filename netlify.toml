@@ -1,0 +1,16 @@
+# Netlify site config for the cg-exam demo.
+#
+# This repo is a monorepo (perxona-connect-kit-main/ holds the actual Connect
+# Kit samples/tools) — `base` points Netlify at the one small, self-contained
+# subproject built specifically for static hosting + Netlify Functions. The
+# rest of the repo (samples/express and its other demos, tools/motion-browser)
+# is an always-on Node/Express app and is not deployed by this config; see
+# perxona-connect-kit-main/deploy/netlify-cg-exam/README.md for why cg-exam
+# gets its own deploy folder instead of reusing server.mjs directly.
+[build]
+  base = "perxona-connect-kit-main/deploy/netlify-cg-exam"
+  publish = "public"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
