@@ -179,8 +179,8 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
     <dl class="spec" id="spec"></dl>
     <h2 id="t-h-mode"></h2>
     <div class="modes">
-      <button class="mode" id="m-exam" aria-pressed="true"></button>
-      <button class="mode" id="m-study" aria-pressed="false"></button>
+      <button class="mode" id="m-study" aria-pressed="true"></button>
+      <button class="mode" id="m-exam" aria-pressed="false"></button>
     </div>
     <p class="modenote" id="modenote"></p>
     <h2 id="t-h-sets"></h2>
@@ -393,7 +393,7 @@ function view(slot){
 
 const SETS=buildSets();
 const best=new Array(NSETS).fill(null);
-let mode="exam",slots=null,paper=null,labelKey=null,setIdx=-1,cur=0,answers=[],timer=null,remain=3600,reviewFilter="all",graded=false;
+let mode="study",slots=null,paper=null,labelKey=null,setIdx=-1,cur=0,answers=[],timer=null,remain=3600,reviewFilter="all",graded=false;
 
 const $=id=>document.getElementById(id);
 const show=id=>{document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));$(id).classList.add("active");window.scrollTo(0,0);};
