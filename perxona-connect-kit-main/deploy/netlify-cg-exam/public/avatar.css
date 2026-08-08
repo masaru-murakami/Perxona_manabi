@@ -51,6 +51,18 @@
   display: none;
 }
 
+.avatar-scene-select {
+  display: block;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 6px 8px;
+  background: #ffffff;
+  border: 1px solid #c9ceda;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #444b5c;
+}
+
 .avatar-accent {
   display: flex;
   align-items: center;

@@ -74,6 +74,8 @@ const VOICE_BY_LANG = {
 let accentMode = false;
 let lastLang = "ja";
 const accentToggle = document.querySelector("#avatar-accent-toggle");
+const sceneSelect = document.querySelector("#avatar-scene-select");
+let currentSceneId;
 
 function voiceForLang(lang) {
   if (accentMode) return VOICE_BY_LANG.ja;
@@ -181,6 +183,7 @@ async function init() {
     const initialLang = document.documentElement.lang === "en" ? "en" : "ja";
     lastLang = initialLang;
     currentVoiceId = voiceForLang(initialLang) ?? voiceId ?? undefined;
+    currentSceneId = sceneId;
     const { connect_token } = await requestJson("/api/connect-token");
     await presenter.initialize(connect_token, {
       avatarId,
@@ -194,30 +197,69 @@ async function init() {
   return initPromise;
 }
 
+// Voice switch (language toggle / accent mode) and scene switch (the panel's
+// <select>) both call presenter.initialize() to swap one part of the target.
+// Both can fire around the same time — e.g. on page load, a browser can
+// restore an already-answered question (firing onReveal → ensureVoice) and a
+// restored <select> value (firing switchScene) together — and two overlapping
+// initialize() calls race and leave the presenter stuck with no further
+// PRESENTER_STATUS "Ready" event. reinitChain forces every reinit through one
+// at a time; reinitPresenter() does the actual work once it's its turn.
+let reinitChain = Promise.resolve();
+
+function queueReinit(fn) {
+  reinitChain = reinitChain.then(fn, fn);
+  return reinitChain;
+}
+
+async function reinitPresenter({ sceneId, voiceId } = {}) {
+  await init();
+  if (!config || config.mock) return;
+  const targetSceneId = sceneId ?? currentSceneId;
+  const targetVoiceId = voiceId ?? currentVoiceId;
+  if (targetSceneId === currentSceneId && targetVoiceId === currentVoiceId) {
+    return;
+  }
+  try {
+    ready = false;
+    panel.classList.remove("ready");
+    setStatus(lastLang === "ja" ? "切り替え中…" : "Switching…");
+    const { avatarId } = config.defaults ?? {};
+    const { connect_token } = await requestJson("/api/connect-token");
+    await presenter.initialize(connect_token, {
+      avatarId,
+      sceneId: targetSceneId,
+      voiceId: targetVoiceId,
+    });
+    currentSceneId = targetSceneId;
+    currentVoiceId = targetVoiceId;
+    // The presenter re-fires PRESENTER_STATUS → "Ready" once the swapped
+    // target finishes loading; the listener registered in init() sets
+    // ready/panel.classList/status back at that point.
+  } catch (error) {
+    console.error("[avatar] reinit failed", error);
+    setStatus(`Switch failed: ${error.message}`);
+  }
+}
+
 // Switches the Presenter to the voice for `lang` if it isn't already active.
 // Called at the top of every hook, after init(), so the very first line the
 // avatar speaks in a session already uses the right voice.
 async function ensureVoice(lang) {
   lastLang = lang;
   await init();
-  if (!ready) return;
-  const voiceId = voiceForLang(lang);
-  if (voiceId === currentVoiceId) return;
-  try {
-    ready = false;
-    panel.classList.remove("ready");
-    setStatus(lang === "ja" ? "音声を切り替え中…" : "Switching voice…");
-    const { avatarId, sceneId } = config.defaults ?? {};
-    const { connect_token } = await requestJson("/api/connect-token");
-    await presenter.initialize(connect_token, { avatarId, sceneId, voiceId });
-    currentVoiceId = voiceId;
-    // The presenter re-fires PRESENTER_STATUS → "Ready" once the swapped
-    // target finishes loading; the listener registered in init() sets
-    // ready/panel.classList/status back at that point.
-  } catch (error) {
-    console.error("[avatar] voice switch failed", error);
-    setStatus(`Voice switch failed: ${error.message}`);
-  }
+  await queueReinit(() => reinitPresenter({ voiceId: voiceForLang(lang) }));
+}
+
+// Re-initializes the Presenter against a different scene, keeping the same
+// avatar and voice. Triggered by the scene <select> in the panel — lets
+// switching backgrounds happen live in the browser instead of only via the
+// server's DEMO_DEFAULT_SCENE_ID env var (which needs a restart to change).
+async function switchScene(sceneId) {
+  await init();
+  await queueReinit(() =>
+    reinitPresenter({ sceneId: sceneId || config?.defaults?.sceneId }),
+  );
 }
 
 async function ensureAudio() {
@@ -412,6 +454,10 @@ accentToggle?.addEventListener("change", async () => {
   accentMode = accentToggle.checked;
   await ensureVoice(lastLang);
   await speak(ACCENT_DEMO_LINE[lastLang] ?? ACCENT_DEMO_LINE.ja);
+});
+
+sceneSelect?.addEventListener("change", () => {
+  switchScene(sceneSelect.value);
 });
 
 window.CGExamAvatar = { onStart, onReveal, explain, onResult };
