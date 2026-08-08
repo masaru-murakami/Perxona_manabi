@@ -14,3 +14,12 @@
 
 [build.environment]
   NODE_VERSION = "22"
+  # Netlify's secrets scanner fails the build if any configured environment
+  # variable's value appears verbatim in the repo checkout or build output.
+  # These keys are config values, not actual credentials, and legitimately
+  # appear elsewhere in this repo (e.g. .env.example, other demos' docs,
+  # avatar.js's motion-catalog comments) — false positives, safe to omit.
+  # PERXONA_CONNECT_EMAIL / PERXONA_CONNECT_PASSWORD / LLM_API_KEY are
+  # deliberately NOT listed here: those are the actual secrets, and scanning
+  # should keep failing the build if one of them ever leaks into the repo.
+  SECRETS_SCAN_OMIT_KEYS = "PERXONA_API_BASE_URL,PRESENTER_URL,DEMO_DEFAULT_AVATAR_ID,DEMO_DEFAULT_SCENE_ID,DEMO_DEFAULT_VOICE_ID,DEMO_DEFAULT_MOTION_ID,LLM_PROVIDER,LLM_MODEL,LLM_BASE_URL,NODE_VERSION"
