@@ -44,9 +44,32 @@ function assertConfigured() {
   }
 }
 
+// HTTP header values must be ByteString (Latin-1, code points 0-255) — the
+// native error when they aren't ("Cannot convert argument to a ByteString…")
+// doesn't say *which* value was bad. This turns that into an actionable
+// message naming the offending env var, so a stray character from copying a
+// value into the Netlify dashboard (smart quotes, a bullet from a pasted
+// list, a trailing character) is easy to spot instead of a guessing game.
+function assertHeaderSafe(name, value) {
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    if (code > 255) {
+      throw new UpstreamError(
+        `${name} contains a character that can't go in an HTTP header (U+${code.toString(16).toUpperCase()} at position ${i}). ` +
+          "This usually means the value got mangled when it was copied into the Netlify dashboard — re-copy it from the source " +
+          "(e.g. your local .env file) rather than from a chat message or rendered document, then redeploy.",
+        500,
+      );
+    }
+  }
+}
+
 async function callUpstream(path, opts = {}, token) {
   const headers = { "Content-Type": "application/json", ...opts.headers };
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (token) {
+    assertHeaderSafe("The Perxona Connect bearer token", token);
+    headers["Authorization"] = `Bearer ${token}`;
+  }
   return fetch(`${PERXONA_API_BASE_URL}${path}`, { ...opts, headers });
 }
 
@@ -122,6 +145,7 @@ export async function authedCall(fn) {
 
 export function llmRequestConfig(messages, responseFormat) {
   const model = process.env.LLM_MODEL ?? "gpt-4o-mini";
+  if (LLM_API_KEY) assertHeaderSafe("LLM_API_KEY", LLM_API_KEY);
   if (LLM_PROVIDER === "anthropic") {
     const system = messages
       .filter(({ role }) => role === "system")
