@@ -112,6 +112,24 @@ function pickMotion(keywords) {
   return config?.defaults?.motionId ?? motions[0]?.id;
 }
 
+// The floating panel is small (200x200px), so the default full-body framing
+// leaves the avatar tiny with lots of dead space. "halfbody" (CameraAngle,
+// see @perxona/presenter-types) plus a manual FOV nudge gets a much closer,
+// portrait-style shot instead — dialed in empirically (the SDK doesn't
+// document what units distance/vertical/horizontal are in) by trying values
+// against this avatar until the framing looked right; adjust here if a
+// different avatar/scene needs a different crop. Re-applied every time
+// PRESENTER_STATUS reports "Ready" (including after a voice-switch
+// re-initialize, which resets camera state).
+function applyCameraFraming() {
+  try {
+    presenter.updateCameraAngle?.("halfbody");
+    presenter.updateCameraFOV?.({ distance: 0.05, vertical: -10, horizontal: 1 });
+  } catch (error) {
+    console.error("[avatar] camera framing failed", error);
+  }
+}
+
 async function init() {
   if (initPromise) return initPromise;
   initPromise = (async () => {
@@ -144,6 +162,7 @@ async function init() {
         ready = true;
         panel.classList.add("ready");
         setStatus("");
+        applyCameraFraming();
       }
     });
     presenter.addEventListener("CONNECT_TOKEN_EXPIRED", async () => {
