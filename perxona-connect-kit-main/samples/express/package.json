@@ -1,0 +1,22 @@
+{
+  "name": "perxona-connect-kit",
+  "version": "0.1.0",
+  "description": "Perxona Connect Kit — sample backend + frontend for building with the Perxona Connect API",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "predev": "node scripts/check-env.mjs",
+    "prestart": "node scripts/check-env.mjs",
+    "start": "node --env-file=.env server.mjs",
+    "dev": "node --env-file=.env --watch server.mjs"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@perxona/presenter-types": "latest"
+  }
+}

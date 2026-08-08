@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Perxona Connect Kit</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- ── App ───────────────────────────────────────────────────────────── -->
+    <div id="app">
+      <aside class="sidebar">
+        <div class="sidebar-inner">
+          <p class="brand">Perxona Connect Kit</p>
+
+          <div class="field-group">
+            <label class="field">
+              <span>Avatar</span>
+              <div class="select-row">
+                <img id="avatar-icon" class="asset-icon" alt="" hidden />
+                <select id="avatar-select">
+                  <option value="">— loading —</option>
+                </select>
+              </div>
+            </label>
+            <label class="field">
+              <span>Scene</span>
+              <div class="select-row">
+                <img id="scene-icon" class="asset-icon" alt="" hidden />
+                <select id="scene-select">
+                  <option value="">— loading —</option>
+                </select>
+              </div>
+            </label>
+            <label class="field">
+              <span>Voice</span>
+              <select id="voice-select">
+                <option value="">— loading —</option>
+              </select>
+            </label>
+          </div>
+
+          <button id="init-btn" disabled>Launch</button>
+          <p id="status-msg" class="status"></p>
+
+          <!-- ── performance controls ─────────────────────────── -->
+          <div id="perf-controls" class="perf-controls" hidden>
+            <label class="section-label" for="say-input">Say something</label>
+            <div class="preset-grid">
+              <button class="btn-preset" data-text="Hello! Welcome to Perxona!">
+                Greet
+              </button>
+              <button class="btn-preset" data-text="I'm so excited!">
+                Excited
+              </button>
+              <button class="btn-preset" data-text="Let me think…">
+                Thinking
+              </button>
+              <button class="btn-preset" data-text="Goodbye!">Farewell</button>
+            </div>
+            <form id="say-form" class="say-row">
+              <input
+                id="say-input"
+                type="text"
+                placeholder="Type a line to speak…"
+                autocomplete="off"
+              />
+              <button type="submit" id="say-btn">Send</button>
+            </form>
+
+            <label class="section-label" for="audio-file"
+              >Present with audio</label
+            >
+            <form id="audio-form" class="audio-form">
+              <input id="audio-file" type="file" accept="audio/*" />
+              <div class="say-row">
+                <input
+                  id="audio-text"
+                  type="text"
+                  placeholder="Text to accompany audio…"
+                  autocomplete="off"
+                />
+                <button type="submit" id="audio-send-btn">Send</button>
+              </div>
+            </form>
+
+            <button id="stop-btn" class="btn-ghost">Stop</button>
+          </div>
+
+          <!-- ── chat panel (opt-in) ──────────────────────────── -->
+          <div id="chat-panel" class="chat-panel" hidden>
+            <label class="section-label" for="chat-input"> Chat </label>
+            <div id="chat-log" class="chat-log"></div>
+            <form id="chat-form" class="say-row">
+              <input
+                id="chat-input"
+                type="text"
+                placeholder="Ask the avatar…"
+                autocomplete="off"
+              />
+              <button type="submit" id="chat-send-btn">Send</button>
+            </form>
+          </div>
+          <p id="chat-hint" class="chat-hint" hidden>
+            Set <code>LLM_API_KEY</code> in <code>.env</code> to enable chat.
+          </p>
+        </div>
+      </aside>
+
+      <main class="stage">
+        <div id="stage-placeholder" class="placeholder">
+          <p>
+            Select an avatar and scene,<br />then click <strong>Launch</strong>.
+          </p>
+        </div>
+        <!-- sv-presenter fills the stage once initialized -->
+        <sv-presenter hidden></sv-presenter>
+      </main>
+    </div>
+
+    <!-- presenter engine script is injected dynamically by app.js, once it
+         learns the URL from GET /api/config (see server.mjs PRESENTER_URL). -->
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

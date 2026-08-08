@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Starter | Perxona Connect Kit</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <a href="/">Perxona Connect Kit</a>
+        <p class="eyebrow">Learning-first Presenter example</p>
+        <h1>Launch a speaking avatar with one small page.</h1>
+        <p>
+          Use the configured defaults or swap the target, preview a motion, and
+          send Motion Markup to <code>present()</code>.
+        </p>
+      </header>
+
+      <section class="layout">
+        <div class="panel controls">
+          <h2>1. Choose a target</h2>
+          <label
+            >Avatar<select id="avatar-select">
+              <option>Loading…</option>
+            </select></label
+          >
+          <label
+            >Scene<select id="scene-select">
+              <option>Loading…</option>
+            </select></label
+          >
+          <label
+            >Voice<select id="voice-select">
+              <option>Loading…</option>
+            </select></label
+          >
+          <button id="launch-btn" disabled>Enable Audio</button>
+          <p id="status" class="status" role="status"></p>
+
+          <h2>2. Try a motion</h2>
+          <div id="motions" class="motion-list"><p>Loading motions…</p></div>
+
+          <h2>3. Speak</h2>
+          <form id="say-form" class="inline-form">
+            <input
+              id="say-input"
+              placeholder="Say something…"
+              autocomplete="off"
+            />
+            <button type="submit">Speak</button>
+          </form>
+          <button id="stop-btn" class="secondary" disabled>Interrupt</button>
+        </div>
+
+        <div class="panel workspace">
+          <div id="stage" class="stage">
+            <p id="stage-placeholder">
+              Preparing the configured Presenter target.
+            </p>
+            <sv-presenter hidden></sv-presenter>
+          </div>
+          <div class="script-card">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">Motion Markup</p>
+                <h2>Compose a script</h2>
+              </div>
+              <button id="copy-btn" class="secondary">Copy</button>
+            </div>
+            <textarea id="script-input" rows="5">
+Hello! It is great to meet you.</textarea
+            >
+            <button id="present-btn" disabled>Present Script</button>
+            <pre id="result" class="result" aria-live="polite"></pre>
+          </div>
+          <section class="code-example" aria-labelledby="starter-code-title">
+            <div>
+              <p class="eyebrow">How it works</p>
+              <h2 id="starter-code-title">Initialize, then present</h2>
+              <p>
+                The page preloads the configured target with a server-issued
+                Connect token. Audio still needs one user gesture before speech.
+              </p>
+            </div>
+            <pre><code>const { connect_token } = await request("/api/connect-token");
+
+await presenter.initialize(connect_token, {
+  avatarId,
+  sceneId,
+  voiceId,
+});
+
+// Call from a user gesture before speaking.
+await presenter.resumeAudioPlayback();
+await presenter.present("Hello! It is great to meet you.");</code></pre>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

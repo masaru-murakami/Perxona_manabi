@@ -1,0 +1,882 @@
+/* Perxona Connect Kit — Chatbot Demo styles */
+
+/* ── Reset + base ──────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure [hidden] always wins over class-level display rules (e.g. display:flex
+   set by .chat-content or .placeholder). The UA stylesheet's [hidden]{display:none}
+   loses to author stylesheets by cascade origin, so we re-declare it here with
+   !important so JavaScript can safely toggle .hidden on any element. */
+[hidden] {
+  display: none !important;
+}
+
+html,
+body {
+  height: 100%;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 16px;
+  background: #0f0f13;
+  color: #e8e8f0;
+}
+
+/* ── Tokens ────────────────────────────────────────────────────────────── */
+
+:root {
+  --accent: #7c6af7;
+  --accent-hover: #6a5ae0;
+  --danger: #e05a5a;
+  --danger-hover: #c94444;
+  --surface: #1e1e2e;
+  --surface-deep: #0f0f13;
+  --border: #2e2e42;
+  --text: #e8e8f0;
+  --text-muted: #888;
+}
+
+/* ── Shared form elements ──────────────────────────────────────────────── */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.field span,
+.field-group label span {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.required {
+  color: var(--danger);
+}
+
+input,
+select,
+textarea {
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-deep);
+  color: inherit;
+  font-size: 0.95rem;
+  font-family: inherit;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+/* ── Asset icon preview ────────────────────────────────────────────────── */
+
+.select-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.select-row select {
+  flex: 1;
+}
+
+.asset-icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface-deep);
+  object-fit: cover;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+
+button {
+  padding: 0.65rem 1.2rem;
+  border: none;
+  border-radius: 7px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
+  width: 100%;
+}
+
+button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--border) 40%, transparent);
+}
+
+.btn-sm {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.82rem;
+}
+
+.btn-icon {
+  width: auto;
+  flex-shrink: 0;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 400;
+  border-radius: 6px;
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 40%, transparent);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+}
+
+/* ── Status line ───────────────────────────────────────────────────────── */
+
+.status {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  min-height: 1.1em;
+}
+
+/* ── App layout ────────────────────────────────────────────────────────── */
+
+#app {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  height: 100%;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────── */
+
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.sidebar-inner {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.brand {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.demo-label {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 1.5rem;
+}
+
+/* ── Sidebar sections ──────────────────────────────────────────────────── */
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding-top: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-section:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+/* ── Chatbot ID display ─────────────────────────────────────────────────── */
+
+.bot-id-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.7rem;
+  background: var(--surface-deep);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+
+.bot-id-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.bot-id-value {
+  flex: 1;
+  font-family: "SF Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  font-size: 0.78rem;
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.btn-copy {
+  width: auto;
+  flex-shrink: 0;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 500;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+}
+
+.btn-copy:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--border) 40%, transparent);
+  color: var(--text);
+}
+
+/* ── Custom bot picker ─────────────────────────────────────────────────── */
+
+/* Container: position: relative so the dropdown list is anchored here,
+   not clipped by the sidebar's overflow-y: auto. */
+.bot-picker {
+  position: relative;
+}
+
+.bot-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bot-picker-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  background: var(--surface-deep);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 400;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s;
+  width: auto; /* override the full-width default for <button> */
+}
+
+.bot-picker-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--surface-deep);
+}
+
+.bot-picker-btn[aria-expanded="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+#bot-picker-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bot-picker-chevron {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+
+.bot-picker-btn[aria-expanded="true"] .bot-picker-chevron {
+  transform: rotate(180deg);
+}
+
+/* Dropdown list — position: absolute so it escapes the sidebar's scroll
+   context. z-index keeps it above all other sidebar content. */
+.bot-picker-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  max-height: 220px;
+  overflow-y: auto;
+  list-style: none;
+  padding: 0.3rem;
+  margin: 0;
+}
+
+.bot-picker-option {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.1s;
+  user-select: none;
+}
+
+.bot-picker-option:hover {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.bot-picker-option[aria-selected="true"]:not(.empty-option) {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: #d0caff;
+}
+
+.bot-picker-option.empty-option {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ── Bot editor (collapsible) ──────────────────────────────────────────── */
+
+details {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-deep);
+}
+
+details[open] {
+  border-color: var(--accent);
+}
+
+summary {
+  padding: 0.6rem 0.85rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+summary::before {
+  content: "▸";
+  font-size: 0.7rem;
+  transition: transform 0.15s;
+}
+
+details[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.bot-form {
+  padding: 0.75rem 0.85rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.bot-form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.bot-form-actions button {
+  flex: 1;
+}
+
+/* ── Bot form subsections (Knowledge / Tools) ──────────────────────────── */
+
+.bot-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--border);
+}
+
+.bot-form-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.section-sub-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.field-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.field-hint code {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0 0.3rem;
+  font-size: 0.7rem;
+}
+
+/* ── Knowledge file upload ─────────────────────────────────────────────── */
+
+.knowledge-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Styled file-picker button */
+.btn-file {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.75rem;
+  background: var(--surface-deep);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+
+.btn-file:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.btn-file input[type="file"] {
+  display: none;
+}
+
+.knowledge-filename {
+  flex: 1;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Knowledge status badge */
+.knowledge-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.12rem 0.5rem;
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.knowledge-badge--none {
+  background: color-mix(in srgb, var(--border) 50%, transparent);
+  color: var(--text-muted);
+}
+.knowledge-badge--processing {
+  background: color-mix(in srgb, #f59e0b 18%, transparent);
+  color: #fbbf24;
+}
+.knowledge-badge--ready {
+  background: color-mix(in srgb, #10b981 18%, transparent);
+  color: #34d399;
+}
+.knowledge-badge--error {
+  background: color-mix(in srgb, #ef4444 18%, transparent);
+  color: #f87171;
+}
+
+.tools-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tools-count {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* ── Tools JSON textarea ───────────────────────────────────────────────── */
+
+.tools-editor {
+  font-family: "SF Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Danger ghost variant for Remove button */
+.btn-danger-ghost {
+  background: transparent;
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
+.btn-danger-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+/* ── Main layout ───────────────────────────────────────────────────────── */
+
+.main {
+  display: grid;
+  grid-template-rows: 1fr 240px;
+  overflow: hidden;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+
+.stage {
+  position: relative;
+  background: #050508;
+  overflow: hidden;
+}
+
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  pointer-events: none;
+}
+
+/* ── Debug timeline panel ──────────────────────────────────────────────── */
+/*
+ * Color legend
+ *   purple  (user)  — user sent a message
+ *   amber   (api)   — chatbot API call in flight
+ *   green   (bot)   — chatbot reply received
+ *   sky     (cmd)   — command sent to sv-presenter
+ *   violet  (sdk)   — event received from sv-presenter SDK
+ *   emerald (ok)    — success / completion
+ *   red     (err)   — error
+ */
+
+.debug-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 192px;
+  background: rgba(5, 5, 8, 0.84);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+}
+
+.debug-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0.8rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.debug-panel-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.debug-clear-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 0.65rem;
+  padding: 0.12rem 0.5rem;
+  cursor: pointer;
+  width: auto;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.debug-clear-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.debug-log {
+  overflow-y: auto;
+  flex: 1;
+  padding: 0.25rem 0;
+  list-style: none;
+}
+
+.debug-log::-webkit-scrollbar {
+  width: 3px;
+}
+.debug-log::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.debug-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  padding: 0.16rem 0.8rem;
+  line-height: 1.45;
+}
+
+/* Colored dot before each entry */
+.debug-entry::before {
+  content: "•";
+  flex-shrink: 0;
+  font-size: 0.5rem;
+  padding-top: 0.1rem;
+}
+
+.debug-ts {
+  flex-shrink: 0;
+  width: 7.5ch;
+  font-family: "SF Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.18);
+}
+
+.debug-msg {
+  font-family: "SF Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+  font-size: 0.7rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Per-type accent colours */
+.debug-entry--user::before,
+.debug-entry--user .debug-msg {
+  color: #a78bfa;
+} /* purple — user       */
+
+.debug-entry--api::before,
+.debug-entry--api .debug-msg {
+  color: #fbbf24;
+} /* amber  — API call   */
+
+.debug-entry--bot::before,
+.debug-entry--bot .debug-msg {
+  color: #34d399;
+} /* green  — bot reply  */
+
+.debug-entry--cmd::before,
+.debug-entry--cmd .debug-msg {
+  color: #38bdf8;
+} /* sky    — cmd sent   */
+
+.debug-entry--sdk::before,
+.debug-entry--sdk .debug-msg {
+  color: #c4b5fd;
+} /* violet — SDK event  */
+
+.debug-entry--ok::before,
+.debug-entry--ok .debug-msg {
+  color: #86efac;
+} /* emerald — success   */
+
+.debug-entry--err::before,
+.debug-entry--err .debug-msg {
+  color: #f87171;
+} /* red    — error      */
+
+/* ── Chat area ─────────────────────────────────────────────────────────── */
+
+.chat-area {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-placeholder {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.chat-placeholder p {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+.chat-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0.75rem 1rem 0.75rem;
+  gap: 0.6rem;
+}
+
+.chat-log {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-right: 0.25rem;
+}
+
+/* Thin scrollbar for chat log */
+.chat-log::-webkit-scrollbar {
+  width: 4px;
+}
+.chat-log::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+
+.chat-msg {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+  max-width: 82%;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.chat-msg.user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 3px;
+}
+
+.chat-msg.assistant {
+  align-self: flex-start;
+  background: var(--surface-deep);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 3px;
+}
+
+.chat-msg.error {
+  align-self: flex-start;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+  color: var(--danger);
+  border-bottom-left-radius: 3px;
+}
+
+/* ── Chat input row ────────────────────────────────────────────────────── */
+
+.chat-input-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.chat-input-row input {
+  flex: 1;
+}
+
+.chat-input-row button {
+  width: auto;
+  flex-shrink: 0;
+  padding: 0.6rem 1.1rem;
+}

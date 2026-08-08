@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Perxona Connect Kit — Chatbot</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- ── Sidebar ─────────────────────────────────────────────────── -->
+      <aside class="sidebar">
+        <div class="sidebar-inner">
+          <p class="brand">Perxona Connect Kit</p>
+          <p class="demo-label">Chatbot Demo</p>
+
+          <!-- ── Presenter setup ──────────────────────────────────────── -->
+          <section class="sidebar-section">
+            <p class="section-label">Presenter Setup</p>
+            <div class="field-group">
+              <label class="field">
+                <span>Avatar</span>
+                <div class="select-row">
+                  <img id="avatar-icon" class="asset-icon" alt="" hidden />
+                  <select id="avatar-select">
+                    <option value="">— loading —</option>
+                  </select>
+                </div>
+              </label>
+              <label class="field">
+                <span>Scene</span>
+                <div class="select-row">
+                  <img id="scene-icon" class="asset-icon" alt="" hidden />
+                  <select id="scene-select">
+                    <option value="">— loading —</option>
+                  </select>
+                </div>
+              </label>
+              <label class="field">
+                <span>Voice</span>
+                <select id="voice-select">
+                  <option value="">— loading —</option>
+                </select>
+              </label>
+            </div>
+            <button id="init-btn" disabled>Launch Presenter</button>
+            <p id="status-msg" class="status"></p>
+          </section>
+
+          <!-- ── Chatbot Manager ──────────────────────────────────────── -->
+          <section class="sidebar-section" id="chatbot-manager">
+            <p class="section-label">Chatbot</p>
+
+            <div class="field">
+              <span>Active Chatbot</span>
+              <div class="bot-picker" id="bot-picker">
+                <div class="bot-picker-row">
+                  <button
+                    type="button"
+                    id="bot-picker-btn"
+                    class="bot-picker-btn"
+                    aria-haspopup="listbox"
+                    aria-expanded="false"
+                  >
+                    <span id="bot-picker-label">— loading —</span>
+                    <span class="bot-picker-chevron" aria-hidden="true">▾</span>
+                  </button>
+                  <button
+                    id="bot-delete-btn"
+                    class="btn-icon btn-danger"
+                    title="Delete chatbot"
+                    aria-label="Delete chatbot"
+                    hidden
+                  >
+                    ✕
+                  </button>
+                </div>
+                <ul
+                  id="bot-picker-list"
+                  class="bot-picker-list"
+                  role="listbox"
+                  hidden
+                ></ul>
+              </div>
+            </div>
+            <div id="bot-id-row" class="bot-id-row" hidden>
+              <span class="bot-id-label">ID</span>
+              <code id="bot-id-value" class="bot-id-value"></code>
+              <button
+                id="bot-id-copy"
+                class="btn-copy"
+                title="Copy ID"
+                aria-label="Copy chatbot ID"
+              >
+                Copy
+              </button>
+            </div>
+            <p id="bot-status" class="status"></p>
+
+            <!-- Collapsible create / edit form -->
+            <details id="bot-editor">
+              <summary id="bot-editor-summary">Create / Edit</summary>
+              <div class="bot-form">
+                <!-- ── Basic info ─────────────────────────────────────── -->
+                <label class="field">
+                  <span>Name <span class="required">*</span></span>
+                  <input
+                    id="bot-name"
+                    type="text"
+                    placeholder="My Support Bot"
+                    maxlength="100"
+                    autocomplete="off"
+                  />
+                </label>
+                <label class="field">
+                  <span>System Instructions</span>
+                  <textarea
+                    id="bot-instructions"
+                    rows="3"
+                    placeholder="You are a helpful assistant that answers questions about…"
+                  ></textarea>
+                </label>
+
+                <!-- ── Knowledge File ─────────────────────────────────── -->
+                <div class="bot-form-section">
+                  <div class="bot-form-section-header">
+                    <span class="section-sub-label">Knowledge File</span>
+                    <span
+                      id="bot-knowledge-status"
+                      class="knowledge-badge knowledge-badge--none"
+                    >
+                      No file
+                    </span>
+                  </div>
+                  <p class="field-hint">
+                    Upload a <code>.txt</code>, <code>.pdf</code>,
+                    <code>.doc</code>, <code>.docx</code>, or
+                    <code>.csv</code> file. The chatbot will use its content to
+                    answer questions (RAG).
+                  </p>
+                  <div class="knowledge-row">
+                    <label class="btn-file">
+                      <input
+                        id="bot-knowledge-file"
+                        type="file"
+                        accept=".txt,.pdf,.doc,.docx,.csv"
+                      />
+                      Choose file…
+                    </label>
+                    <span
+                      id="bot-knowledge-filename"
+                      class="knowledge-filename"
+                    ></span>
+                    <button
+                      type="button"
+                      id="bot-knowledge-remove-btn"
+                      class="btn-ghost btn-sm btn-danger-ghost"
+                      hidden
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+
+                <!-- ── Function Tools ─────────────────────────────────── -->
+                <div class="bot-form-section">
+                  <div class="bot-form-section-header">
+                    <span class="section-sub-label">Function Tools</span>
+                    <div class="tools-header-actions">
+                      <span id="bot-tools-count" class="tools-count"></span>
+                      <button
+                        type="button"
+                        id="bot-tools-example-btn"
+                        class="btn-ghost btn-sm"
+                      >
+                        Load Example
+                      </button>
+                    </div>
+                  </div>
+                  <p class="field-hint">
+                    JSON array of HTTP APIs the chatbot can call. Leave empty to
+                    keep existing tools unchanged. Use
+                    <code>[]</code> to clear all tools.
+                  </p>
+                  <textarea
+                    id="bot-tools"
+                    class="tools-editor"
+                    rows="7"
+                    placeholder="Leave empty → keep existing tools unchanged&#10;[] → clear all tools&#10;[{...}] → replace all tools (full replacement, not incremental)"
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                  ></textarea>
+                </div>
+
+                <div class="bot-form-actions">
+                  <button id="bot-save-btn">Save</button>
+                  <button id="bot-cancel-btn" class="btn-ghost">Cancel</button>
+                </div>
+              </div>
+            </details>
+
+            <button id="bot-new-btn" class="btn-ghost btn-sm">
+              + New Chatbot
+            </button>
+          </section>
+        </div>
+      </aside>
+
+      <!-- ── Main area ───────────────────────────────────────────────── -->
+      <main class="main">
+        <!-- Presenter stage -->
+        <div class="stage">
+          <div id="stage-placeholder" class="placeholder">
+            <p>
+              Select an avatar &amp; scene,<br />then click Launch Presenter.
+            </p>
+          </div>
+          <sv-presenter hidden style="width: 100%; height: 100%"></sv-presenter>
+
+          <!-- ── Debug timeline panel ─────────────────────────────────── -->
+          <!-- Shows the full lifecycle of each chat turn: user message →
+               chatbot API → reply → presenter commands → SDK events. -->
+          <div id="debug-panel" class="debug-panel" hidden>
+            <div class="debug-panel-header">
+              <span class="debug-panel-title">⏱ Conversation Timeline</span>
+              <button
+                type="button"
+                id="debug-clear-btn"
+                class="debug-clear-btn"
+                aria-label="Clear timeline"
+              >
+                Clear
+              </button>
+            </div>
+            <ol id="debug-log" class="debug-log"></ol>
+          </div>
+        </div>
+
+        <!-- Chat area -->
+        <div class="chat-area">
+          <div id="chat-placeholder" class="chat-placeholder">
+            <p id="chat-hint-text">
+              Select a chatbot and launch the presenter to start chatting.
+            </p>
+          </div>
+          <div id="chat-content" class="chat-content" hidden>
+            <div id="chat-log" class="chat-log"></div>
+            <form id="chat-form" class="chat-input-row">
+              <input
+                id="chat-input"
+                type="text"
+                placeholder="Ask the chatbot…"
+                autocomplete="off"
+              />
+              <button type="submit" id="chat-send-btn" disabled>Send</button>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

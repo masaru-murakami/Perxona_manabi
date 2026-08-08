@@ -1,0 +1,233 @@
+:root {
+  color-scheme: dark;
+  --bg: #11171b;
+  --panel: #1b252b;
+  --line: #3a4b54;
+  --text: #f0f5f4;
+  --muted: #9eb1b5;
+  --accent: #8fd3c7;
+  --accent-dark: #5bb4a5;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #172329, var(--bg) 55%, #26352d);
+  color: var(--text);
+  font:
+    16px/1.5 ui-sans-serif,
+    system-ui,
+    sans-serif;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+button {
+  border: 0;
+  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  background: var(--accent);
+  color: #10201e;
+  cursor: pointer;
+  font-weight: 800;
+}
+button:hover:not(:disabled) {
+  background: var(--accent-dark);
+}
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.secondary {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 0.4rem 0.7rem;
+  font-size: 0.85rem;
+}
+.page {
+  width: min(1180px, calc(100% - 2rem));
+  margin: auto;
+  padding: 2rem 0 4rem;
+}
+.hero {
+  max-width: 780px;
+  padding: 1rem 0 2rem;
+}
+.hero a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 800;
+}
+.hero h1 {
+  margin: 0.4rem 0 0.8rem;
+  font-size: clamp(2rem, 5vw, 4.3rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+.hero p {
+  color: var(--muted);
+}
+.eyebrow {
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1rem;
+}
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
+  padding: 1.25rem;
+}
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  align-self: start;
+}
+h2 {
+  font-size: 1.1rem;
+  margin: 0.2rem 0;
+}
+label {
+  display: grid;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #10171a;
+  color: var(--text);
+}
+textarea {
+  resize: vertical;
+  line-height: 1.6;
+}
+.workspace {
+  display: grid;
+  gap: 1.25rem;
+}
+.generate-form {
+  display: grid;
+  gap: 0.5rem;
+}
+.inline-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+}
+.inline-form button {
+  width: auto;
+}
+.response-grid {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 1rem;
+}
+.response-grid section {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+}
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.reply,
+.status,
+.result {
+  color: var(--muted);
+  min-height: 2rem;
+  white-space: pre-wrap;
+}
+.stage {
+  min-height: 380px;
+  display: grid;
+  place-items: center;
+  background: #090d0e;
+  border-radius: 10px;
+  color: var(--muted);
+  text-align: center;
+}
+sv-presenter {
+  width: 100%;
+  min-height: 380px;
+}
+.result {
+  margin: 0;
+  font-size: 0.8rem;
+}
+.code-example {
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+.code-example-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.code-example-heading .secondary {
+  flex: 0 0 auto;
+}
+.code-example p:not(.eyebrow) {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.code-example pre {
+  margin: 0;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #10171a;
+  padding: 1rem;
+  color: var(--text);
+  font:
+    0.8rem/1.6 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+}
+.code-example code {
+  color: inherit;
+  font-size: inherit;
+}
+[hidden] {
+  display: none !important;
+}
+@media (max-width: 780px) {
+  .layout,
+  .response-grid {
+    grid-template-columns: 1fr;
+  }
+  .code-example-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .stage,
+  sv-presenter {
+    min-height: 300px;
+  }
+}

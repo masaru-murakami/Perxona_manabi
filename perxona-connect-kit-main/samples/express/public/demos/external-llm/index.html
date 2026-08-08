@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>External LLM | Perxona Connect Kit</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <a href="/">Perxona Connect Kit</a>
+        <p class="eyebrow">External LLM recipe</p>
+        <h1>Let an LLM draft the script. You decide when it performs.</h1>
+        <p>
+          The server grounds the model with the selected avatar's motion catalog
+          and validates every Motion Markup ID before returning it.
+        </p>
+      </header>
+      <section class="layout">
+        <div class="panel controls">
+          <h2>Presenter target</h2>
+          <label
+            >Avatar<select id="avatar-select">
+              <option>Loading…</option>
+            </select></label
+          >
+          <label
+            >Scene<select id="scene-select">
+              <option>Loading…</option>
+            </select></label
+          >
+          <label
+            >Voice<select id="voice-select">
+              <option>Loading…</option>
+            </select></label
+          >
+          <button id="launch-btn" disabled>Enable Audio</button>
+          <p id="status" class="status" role="status"></p>
+        </div>
+        <div class="panel workspace">
+          <form id="generate-form" class="generate-form">
+            <label for="prompt">What should the avatar do?</label>
+            <div class="inline-form">
+              <input
+                id="prompt"
+                value="Welcome visitors and make a friendly gesture."
+              /><button>Generate Script</button>
+            </div>
+          </form>
+          <div class="response-grid">
+            <section>
+              <p class="eyebrow">Model reply</p>
+              <p id="reply" class="reply">No script generated yet.</p>
+            </section>
+            <section>
+              <div class="section-heading">
+                <p class="eyebrow">Motion Markup preview</p>
+                <button type="button" id="copy-btn" class="secondary">
+                  Copy
+                </button>
+              </div>
+              <textarea
+                id="script"
+                rows="8"
+                placeholder="Generated script appears here…"
+              ></textarea
+              ><button id="run-btn" disabled>Run in Presenter</button>
+            </section>
+          </div>
+          <div id="stage" class="stage">
+            <p id="stage-placeholder">
+              Preparing the configured Presenter target.
+            </p>
+            <sv-presenter hidden></sv-presenter>
+          </div>
+          <pre id="result" class="result" aria-live="polite"></pre>
+          <section
+            class="code-example"
+            aria-labelledby="external-llm-code-title"
+          >
+            <div class="code-example-heading">
+              <div>
+                <p class="eyebrow">How it works</p>
+                <h2 id="external-llm-code-title">
+                  Generate, preview, then run
+                </h2>
+                <p>
+                  Express supplies the avatar-scoped motion catalog to the LLM
+                  when motion markup is useful. The browser previews either
+                  plain text or markup, then presents it only after an explicit
+                  action.
+                </p>
+              </div>
+              <button
+                type="button"
+                class="secondary"
+                data-copy-code="client-code"
+              >
+                Copy client code
+              </button>
+            </div>
+            <pre><code id="client-code">const result = await request("/api/demo-script", {
+  method: "POST",
+  body: { avatarId, prompt },
+});
+
+scriptInput.value = result.script;
+
+runBtn.addEventListener("click", async () =&gt; {
+  // This click is a browser user gesture, so it can unlock audio.
+  await presenter.resumeAudioPlayback();
+  await presenter.present(scriptInput.value.trim());
+});</code></pre>
+          </section>
+          <section
+            class="code-example"
+            aria-labelledby="structured-output-code-title"
+          >
+            <div class="code-example-heading">
+              <div>
+                <p class="eyebrow">Express + LLM skill</p>
+                <h2 id="structured-output-code-title">
+                  Request structured output on the server
+                </h2>
+                <p>
+                  Keep the API key and the trusted motion catalog in Express.
+                  Select OpenAI-compatible Chat Completions or Claude Messages
+                  API with <code>LLM_PROVIDER</code>. The LLM skill asks for
+                  JSON, and server validation rejects invented motion IDs.
+                </p>
+              </div>
+              <button
+                type="button"
+                class="secondary"
+                data-copy-code="server-code"
+              >
+                Copy server code
+              </button>
+            </div>
+            <pre><code id="server-code">const LLM_PROVIDER = process.env.LLM_PROVIDER ?? "openai";
+const LLM_BASE_URL = process.env.LLM_BASE_URL;
+const LLM_API_KEY = process.env.LLM_API_KEY;
+const LLM_MODEL = process.env.LLM_MODEL;
+
+const scriptSchema = {
+  name: "presenter_script",
+  strict: true,
+  schema: {
+    type: "object",
+    additionalProperties: false,
+    required: ["reply", "script"],
+    properties: {
+      reply: { type: "string" },
+      script: { type: "string" },
+    },
+  },
+};
+
+async function createDemoScript(prompt, motions) {
+  const system = [
+    "Write a short avatar script.",
+    "Return JSON with reply and script only.",
+    "Use Motion Markup [MOTION motion-id:1] only when useful.",
+    "Never invent IDs; choose only from this catalog:",
+    JSON.stringify(motions),
+  ].join("\\n");
+  const isClaude = LLM_PROVIDER === "anthropic";
+  const response = await fetch(
+    isClaude
+      ? `${LLM_BASE_URL ?? "https://api.anthropic.com"}/v1/messages`
+      : `${LLM_BASE_URL ?? "https://api.openai.com/v1"}/chat/completions`,
+    {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(isClaude
+        ? {
+            "anthropic-version": "2023-06-01",
+            "x-api-key": LLM_API_KEY,
+          }
+        : { Authorization: `Bearer ${LLM_API_KEY}` }),
+    },
+    body: JSON.stringify(
+      isClaude
+        ? {
+            model: LLM_MODEL,
+            max_tokens: 1024,
+            system: `${system}\\nUser request: ${prompt}`,
+            messages: [{ role: "user", content: prompt }],
+            output_config: {
+              format: { type: "json_schema", schema: scriptSchema.schema },
+            },
+          }
+        : {
+            model: LLM_MODEL,
+            response_format: { type: "json_schema", json_schema: scriptSchema },
+            messages: [
+              { role: "system", content: system },
+              { role: "user", content: prompt },
+            ],
+          },
+    ),
+  },
+  );
+
+  const payload = await response.json();
+  const content = isClaude
+    ? payload.content.find(({ type }) =&gt; type === "text").text
+    : payload.choices[0].message.content;
+  const result = JSON.parse(content);
+  return {
+    reply: result.reply.trim(),
+    script: validateDemoScript(result.script, motions),
+  };
+}
+
+app.post("/api/demo-script", async (req, res) =&gt; {
+  const motions = await getAvatarMotions(req.body.avatarId);
+  res.json(await createDemoScript(req.body.prompt, motions));
+});</code></pre>
+          </section>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

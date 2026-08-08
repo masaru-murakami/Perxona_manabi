@@ -1,0 +1,7 @@
+node_modules/
+.env
+*.log
+.DS_Store
+*.swp
+tests/benchmark-results/
+tests/benchmark/manual.config.mjs

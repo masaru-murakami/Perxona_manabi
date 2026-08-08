@@ -1,0 +1,16 @@
+# Exclude internal dev scaffolding from `git archive` exports.
+# mirror_connect_sample.yml relies solely on this file — `git archive` honours
+# export-ignore automatically, so the workflow does not pass extra --exclude flags.
+mocks/ export-ignore
+tests/ export-ignore
+
+# Internal agent context — kept out of the public mirror.
+# The participant-facing equivalents are AGENTS.public.md / CLAUDE.public.md,
+# which the mirror workflow renames to AGENTS.md / CLAUDE.md on publish.
+/AGENTS.md export-ignore
+/CLAUDE.md export-ignore
+
+# Internal developer README — kept out of the public mirror.
+# The participant-facing equivalent is README.public.md,
+# which the mirror workflow renames to README.md on publish.
+/README.md export-ignore

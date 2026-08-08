@@ -1,0 +1,332 @@
+/* Perxona Connect Kit — styles (Phase B1+) */
+
+/* ── Reset + base ──────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  font-family:
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 16px;
+  background: #0f0f13;
+  color: #e8e8f0;
+}
+
+/* Keep the DOM hidden attribute authoritative when component styles set display. */
+[hidden] {
+  display: none !important;
+}
+
+/* ── Tokens ────────────────────────────────────────────────────────────── */
+
+:root {
+  --accent: #7c6af7;
+  --accent-hover: #6a5ae0;
+  --surface: #1e1e2e;
+  --surface-deep: #0f0f13;
+  --border: #2e2e42;
+  --text: #e8e8f0;
+  --text-muted: #888;
+}
+
+/* ── Shared field ──────────────────────────────────────────────────────── */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field span,
+.field-group label span {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+input,
+select {
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-deep);
+  color: inherit;
+  font-size: 0.95rem;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+/* ── Asset icon preview ───────────────────────────────────────────────── */
+
+.select-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.select-row select {
+  flex: 1;
+}
+
+.asset-icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface-deep);
+  object-fit: cover;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+
+button {
+  padding: 0.65rem 1.2rem;
+  border: none;
+  border-radius: 7px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    opacity 0.15s;
+  width: 100%;
+}
+
+button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--border) 40%, transparent);
+}
+
+/* ── Status ────────────────────────────────────────────────────────────── */
+
+.status {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  min-height: 1.1em;
+}
+
+/* ── App layout ────────────────────────────────────────────────────────── */
+
+#app {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  height: 100%;
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────── */
+
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.sidebar-inner {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.brand {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+/* ── Performance controls + chat (B2) ──────────────────────────────────── */
+
+.section-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: 0.6rem;
+}
+
+.perf-controls,
+.chat-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.btn-preset {
+  padding: 0.5rem 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: var(--surface-deep);
+  border: 1px solid var(--border);
+  color: inherit;
+}
+
+.btn-preset:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: var(--accent);
+}
+
+.say-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.say-row input {
+  flex: 1;
+}
+
+.say-row button {
+  width: auto;
+  flex-shrink: 0;
+}
+
+.audio-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0.25rem;
+}
+
+.chat-msg {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  padding: 0.5rem 0.7rem;
+  border-radius: 9px;
+  max-width: 90%;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.chat-msg.user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: #fff;
+}
+
+.chat-msg.assistant {
+  align-self: flex-start;
+  background: var(--surface-deep);
+  border: 1px solid var(--border);
+}
+
+.chat-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.chat-hint code {
+  background: var(--surface-deep);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  font-size: 0.78rem;
+}
+
+/* ── Stage ─────────────────────────────────────────────────────────────── */
+
+.stage {
+  position: relative;
+  background: #050508;
+  overflow: hidden;
+}
+
+.placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  pointer-events: none;
+  z-index: 1;
+}
+
+sv-presenter[hidden] {
+  display: none !important;
+}
+
+sv-presenter:not([hidden]) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  #app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .stage {
+    min-height: 60vh;
+  }
+}
