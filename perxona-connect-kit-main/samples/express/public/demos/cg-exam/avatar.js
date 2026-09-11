@@ -47,6 +47,9 @@ const panel = document.querySelector("#avatar-panel");
 const bubble = document.querySelector("#avatar-bubble");
 const presenter = document.querySelector("sv-presenter");
 const statusEl = document.querySelector("#avatar-status");
+const askForm = document.querySelector("#avatar-ask-form");
+const askInput = document.querySelector("#avatar-ask-input");
+const askSubmit = document.querySelector("#avatar-ask-submit");
 
 let config;
 let motions = [];
@@ -73,6 +76,11 @@ const VOICE_BY_LANG = {
 // default — the toggle in the panel is what turns it on.
 let accentMode = false;
 let lastLang = "ja";
+// The question currently on screen, kept in sync by index.html's renderQ()
+// calling onQuestion() on every render (question change or lang toggle).
+// Gives the free-text "ask the AI" form the same grounding the "ask the
+// avatar more" button gets, without avatar.js reaching into quiz internals.
+let currentQuestion = null;
 const accentToggle = document.querySelector("#avatar-accent-toggle");
 const sceneSelect = document.querySelector("#avatar-scene-select");
 let currentSceneId;
@@ -319,6 +327,30 @@ const WRONG_LINES = {
   ],
 };
 
+const ASK_TEXT = {
+  ja: {
+    placeholder: "AIに質問する…",
+    submit: "質問する",
+    thinking: "考え中…",
+    disabled:
+      "質問機能を使うにはサーバーの .env に LLM_API_KEY を設定してください。",
+    failed: (message) => `回答の取得に失敗しました: ${message}`,
+  },
+  en: {
+    placeholder: "Ask the AI…",
+    submit: "Ask",
+    thinking: "Thinking…",
+    disabled: "Set LLM_API_KEY in the server's .env to enable this.",
+    failed: (message) => `Failed to get an answer: ${message}`,
+  },
+};
+
+function applyAskFormLang(lang) {
+  const t = ASK_TEXT[lang] ?? ASK_TEXT.ja;
+  if (askInput) askInput.placeholder = t.placeholder;
+  if (askSubmit) askSubmit.textContent = t.submit;
+}
+
 // Keyword lists try emotion-specific names first (in case a richer catalog
 // has them), then fall back to the broad category tags every catalog is
 // likely to have ("category:talking" / "category:idle" / "category:listening").
@@ -343,6 +375,74 @@ async function onReveal(_item, ok, lang) {
   const motionId = pickMotion(ok ? MOTION_KEYWORDS.correct : MOTION_KEYWORDS.wrong);
   const line = pick(ok ? (CORRECT_LINES[lang] ?? CORRECT_LINES.ja) : (WRONG_LINES[lang] ?? WRONG_LINES.ja));
   await speak(withMotion(line, motionId));
+}
+
+// Called by index.html's renderQ() on every question render (navigation or
+// lang toggle) so the free-text ask form always has fresh grounding, without
+// avatar.js reaching into the quiz engine's own state.
+function onQuestion(item, lang, domainName) {
+  currentQuestion = { item, lang, domainName };
+  applyAskFormLang(lang);
+}
+
+// Free-text "ask the AI" form. Grounds the answer in whatever question is
+// currently on screen (set by onQuestion) but still answers reasonably if
+// the question is unrelated or no question is on screen yet.
+async function askQuestion(rawText) {
+  const question = rawText.trim();
+  if (!question) return;
+  const lang = currentQuestion?.lang ?? lastLang;
+  const t = ASK_TEXT[lang] ?? ASK_TEXT.ja;
+  await ensureVoice(lang);
+  say(t.thinking);
+  if (!config || config.mock || !config.chat) {
+    say(t.disabled);
+    return;
+  }
+  try {
+    const context = currentQuestion
+      ? (lang === "ja"
+          ? [
+              `分野: ${currentQuestion.domainName}`,
+              `設問: ${currentQuestion.item.q}`,
+              `選択肢: ${currentQuestion.item.c.join(" / ")}`,
+              `正解: ${currentQuestion.item.c[currentQuestion.item.a]}`,
+            ]
+          : [
+              `Domain: ${currentQuestion.domainName}`,
+              `Question: ${currentQuestion.item.q}`,
+              `Choices: ${currentQuestion.item.c.join(" / ")}`,
+              `Correct answer: ${currentQuestion.item.c[currentQuestion.item.a]}`,
+            ]
+        ).join("\n")
+      : "";
+    const prompt = (
+      lang === "ja"
+        ? [
+            "あなたはCGクリエイター検定の家庭教師アバターです。受験者から次の質問を受け取りました。",
+            context,
+            `受験者からの質問: ${question}`,
+            "上記の設問に関連づけつつ、初学者にも分かるように2〜4文の自然な話し言葉で答えてください。設問とあまり関係のない質問でも、CGクリエイター検定の学習に役立つ範囲で簡潔に答えてください。Motion Markupは付けないでください。",
+          ]
+        : [
+            "You are a friendly tutor avatar for a CG creator certification exam. The test-taker asked you the following question.",
+            context,
+            `Test-taker's question: ${question}`,
+            "Answer in 2-4 natural spoken sentences, relating it to the question above when relevant. If it's unrelated, still answer briefly and usefully for exam study. Do not add Motion Markup.",
+          ]
+    )
+      .filter(Boolean)
+      .join("\n");
+    const result = await requestJson("/api/demo-script", {
+      method: "POST",
+      body: { avatarId: config.defaults.avatarId, prompt },
+    });
+    const motionId = pickMotion(MOTION_KEYWORDS.thinking);
+    await speak(withMotion(result.script, motionId));
+  } catch (error) {
+    console.error("[avatar] ask failed", error);
+    say(t.failed(error.message));
+  }
 }
 
 async function explain(item, ok, lang, domainName) {
@@ -460,5 +560,19 @@ sceneSelect?.addEventListener("change", () => {
   switchScene(sceneSelect.value);
 });
 
-window.CGExamAvatar = { onStart, onReveal, explain, onResult };
+askForm?.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const text = askInput?.value ?? "";
+  if (!text.trim()) return;
+  askInput.value = "";
+  askInput.disabled = true;
+  askSubmit.disabled = true;
+  askQuestion(text).finally(() => {
+    askInput.disabled = false;
+    askSubmit.disabled = false;
+    askInput.focus();
+  });
+});
+
+window.CGExamAvatar = { onStart, onReveal, explain, onResult, onQuestion };
 init();
