@@ -150,7 +150,7 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
 .examcard:hover{border-color:var(--ink);transform:translateY(-2px)}
 .examcard .t{font-family:var(--display);font-size:19px;font-weight:600;margin-bottom:6px}
 .examcard .s{color:var(--muted);font-size:13px}
-.switch-exam{display:block;background:none;border:none;color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-decoration:underline;cursor:pointer;padding:0;margin-bottom:24px}
+.switch-exam{display:block;background:none;border:none;color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-decoration:underline;cursor:pointer;padding:0;margin-top:16px;margin-bottom:24px}
 .switch-exam:hover{color:var(--fill)}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 22px;border-radius:2px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:60}
 .toast.show{opacity:1}
@@ -236,6 +236,7 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
     <div class="grid" id="grid"></div>
     <p class="gridnote" id="gridnote"></p>
     <p style="margin-top:22px"><button class="btn ghost" id="abort"></button></p>
+    <button class="switch-exam" id="switch-exam-2"></button>
   </div>
 </section>
 
@@ -262,6 +263,7 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
       <button class="btn ghost" id="retry"></button>
       <button class="btn ghost" id="home"></button>
     </div>
+    <button class="switch-exam" id="switch-exam-3"></button>
     <footer id="t-footer"></footer>
   </div>
 </section>
@@ -323,6 +325,7 @@ ja:{
  correct:"正解", wrong:"不正解",
  fbCorrect:m=>"正答は "+m+" 。",
  confirmAbort:"解答内容は保存されません。トップに戻りますか？",
+ confirmSwitch:"解答内容は保存されません。検定選択に戻りますか？",
  confirmSubmit:n=>"未解答が"+n+"問あります。このまま採点しますか？",
  timeUp:"時間切れです。採点します",
  modeName:m=>m==="exam"?"本番モード":"演習モード",
@@ -348,6 +351,7 @@ en:{
  correct:"Correct", wrong:"Incorrect",
  fbCorrect:m=>"The answer is "+m+".",
  confirmAbort:"Your answers will not be saved. Return to the start screen?",
+ confirmSwitch:"Your answers will not be saved. Return to the certification picker?",
  confirmSubmit:n=>"You have "+n+" unanswered questions. Score anyway?",
  timeUp:"Time is up. Scoring your answers.",
  modeName:m=>m==="exam"?"Exam mode":"Practice mode",
@@ -493,7 +497,7 @@ function applyStatic(){
   $("copy").textContent=t.copy;
   $("retry").textContent=t.retry;
   $("home").textContent=t.home;
-  $("switch-exam").textContent=t.switchExam;
+  document.querySelectorAll(".switch-exam").forEach(b=>{b.textContent=t.switchExam;});
   $("t-footer").textContent=t.footer;
   renderSets();
 }
@@ -681,7 +685,10 @@ $("submit").onclick=()=>{
   if(un>0&&!confirm(T().confirmSubmit(un)))return;
   grade();
 };
-$("switch-exam").onclick=()=>{clearInterval(timer);EXAM=null;applyStatic();show("s-select");};
+function switchExam(){clearInterval(timer);EXAM=null;applyStatic();show("s-select");}
+$("switch-exam").onclick=switchExam;
+$("switch-exam-2").onclick=()=>{if(confirm(T().confirmSwitch))switchExam();};
+$("switch-exam-3").onclick=switchExam;
 document.addEventListener("keydown",e=>{
   if(!$("s-exam").classList.contains("active"))return;
   if(e.key==="ArrowRight"&&cur<CFG.TOTAL-1){cur++;renderQ();}
