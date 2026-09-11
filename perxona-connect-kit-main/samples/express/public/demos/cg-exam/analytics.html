@@ -57,6 +57,8 @@ td.q, td.r{max-width:280px}
 .tag{display:inline-block;font-family:var(--mono);font-size:10px;padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
 .tag.ok{color:var(--ok);border-color:var(--ok)}
 .tag.ng{color:var(--ng);border-color:var(--ng)}
+.tag.hint{color:var(--back);border-color:var(--back)}
+.tag.ask{color:var(--fill);border-color:var(--fill)}
 .table-wrap{overflow-x:auto}
 </style>
 </head>
@@ -76,7 +78,9 @@ td.q, td.r{max-width:280px}
 
   <div id="view" hidden>
     <div class="stat-row">
-      <div class="stat"><div class="n" id="stat-total">–</div><div class="l">総質問数</div></div>
+      <div class="stat"><div class="n" id="stat-total">–</div><div class="l">総件数</div></div>
+      <div class="stat"><div class="n" id="stat-ask">–</div><div class="l">自由質問</div></div>
+      <div class="stat"><div class="n" id="stat-hint">–</div><div class="l">ヒント</div></div>
       <div class="stat"><div class="n" id="stat-success">–</div><div class="l">回答成功</div></div>
       <div class="stat"><div class="n" id="stat-ja">–</div><div class="l">日本語</div></div>
       <div class="stat"><div class="n" id="stat-en">–</div><div class="l">English</div></div>
@@ -102,7 +106,7 @@ td.q, td.r{max-width:280px}
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>日時</th><th>言語</th><th>分野</th><th>質問</th><th>回答</th><th>結果</th></tr>
+            <tr><th>日時</th><th>種別</th><th>言語</th><th>分野</th><th>質問</th><th>回答</th><th>結果</th></tr>
           </thead>
           <tbody id="table-body"></tbody>
         </table>
@@ -284,6 +288,7 @@ function renderTable() {
       (e) => `
     <tr>
       <td>${formatTs(e.ts)}</td>
+      <td>${e.kind === "hint" ? '<span class="tag hint">ヒント</span>' : '<span class="tag ask">質問</span>'}</td>
       <td>${e.lang === "en" ? "EN" : "JA"}</td>
       <td>${escapeHtml(e.domain ?? "—")}</td>
       <td class="q">${escapeHtml(e.question)}</td>
@@ -296,10 +301,14 @@ function renderTable() {
 
 function render() {
   const total = entries.length;
+  const askCount = entries.filter((e) => e.kind !== "hint").length;
+  const hintCount = entries.filter((e) => e.kind === "hint").length;
   const success = entries.filter((e) => e.success).length;
   const ja = entries.filter((e) => e.lang !== "en").length;
   const en = entries.filter((e) => e.lang === "en").length;
   document.getElementById("stat-total").textContent = total;
+  document.getElementById("stat-ask").textContent = askCount;
+  document.getElementById("stat-hint").textContent = hintCount;
   document.getElementById("stat-success").textContent = success;
   document.getElementById("stat-ja").textContent = ja;
   document.getElementById("stat-en").textContent = en;

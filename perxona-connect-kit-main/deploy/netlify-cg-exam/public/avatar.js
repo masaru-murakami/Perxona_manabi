@@ -56,13 +56,14 @@ const sessionId = getSessionId();
 // Fire-and-forget logging for the analytics view (analytics.html /
 // GET /api/analytics) — never lets a logging failure affect the
 // learner-facing question flow, so it's deliberately not awaited by callers.
-function logQuestion({ domain, question, reply, success, errorMessage }) {
+function logQuestion({ domain, question, reply, success, errorMessage, kind = "ask" }) {
   requestJson("/api/log-question", {
     method: "POST",
     body: {
       sessionId,
       lang: lastLang,
       domain: domain ?? null,
+      kind,
       question,
       reply: reply ?? null,
       success,
@@ -391,6 +392,20 @@ const ASK_TEXT = {
   },
 };
 
+const HINT_TEXT = {
+  ja: {
+    thinking: "ヒントを考え中…",
+    disabled:
+      "ヒント機能を使うにはサーバーの .env に LLM_API_KEY を設定してください。",
+    failed: (message) => `ヒントの取得に失敗しました: ${message}`,
+  },
+  en: {
+    thinking: "Thinking of a hint…",
+    disabled: "Set LLM_API_KEY in the server's .env to enable hints.",
+    failed: (message) => `Failed to get a hint: ${message}`,
+  },
+};
+
 function applyAskFormLang(lang) {
   const t = ASK_TEXT[lang] ?? ASK_TEXT.ja;
   if (askInput) askInput.placeholder = t.placeholder;
@@ -594,6 +609,77 @@ async function askQuestion(rawText) {
   }
 }
 
+// "Hint" button — only shown by index.html in Practice mode before the
+// learner answers (see renderQ()'s #hint-row toggle). Always uses
+// currentQuestion (set by onQuestion on the same render that shows the
+// button, so it's never stale here the way askQuestion's free-text form can
+// be from the home screen). Never reveals the correct choice — the prompt
+// explicitly forbids it — and always opens by explaining what the question
+// is actually asking before nudging toward how to think about it.
+async function hint() {
+  if (!currentQuestion) return;
+  const { item, domainName } = currentQuestion;
+  const lang = lastLang;
+  const t = HINT_TEXT[lang] ?? HINT_TEXT.ja;
+  await ensureVoice(lang);
+  say(t.thinking);
+  if (!config || config.mock || !config.chat) {
+    say(t.disabled);
+    logQuestion({
+      domain: domainName,
+      question: item.q,
+      success: false,
+      errorMessage: "chat_disabled",
+      kind: "hint",
+    });
+    return;
+  }
+  try {
+    const prompt = (
+      lang === "ja"
+        ? [
+            "あなたはCGクリエイター検定の家庭教師アバターです。受験者はまだこの設問に解答していません。",
+            `分野: ${domainName}`,
+            `設問: ${item.q}`,
+            `選択肢: ${item.c.join(" / ")}`,
+            "受験者にヒントを与えてください。まず、この設問が何を問うているのか(意図・着眼点)を1〜2文で説明することから始めてください。続けて、考え方のとっかかりになるヒントを1〜2文添えてください。",
+            "重要: 正解の選択肢そのものや、選択肢を絞り込んで答えが一意に決まってしまうような決定的な情報は、絶対に教えないでください。あくまで考える方向性を示すだけにとどめてください。Motion Markupは付けないでください。",
+          ]
+        : [
+            "You are a friendly tutor avatar for a CG creator certification exam. The test-taker has not answered this question yet.",
+            `Domain: ${domainName}`,
+            `Question: ${item.q}`,
+            `Choices: ${item.c.join(" / ")}`,
+            "Give the test-taker a hint. Start by explaining, in 1-2 sentences, what the question is actually asking (its intent/focus). Then add 1-2 sentences pointing them toward how to think about it.",
+            "Important: never reveal the correct choice, and never give away information decisive enough to narrow the choices down to a single answer. Only point at the direction of thinking. Do not add Motion Markup.",
+          ]
+    ).join("\n");
+    const result = await requestJson("/api/demo-script", {
+      method: "POST",
+      body: { avatarId: config.defaults.avatarId, prompt },
+    });
+    const motionId = pickMotion(MOTION_KEYWORDS.thinking);
+    await speak(withMotion(result.script, motionId));
+    logQuestion({
+      domain: domainName,
+      question: item.q,
+      reply: result.reply,
+      success: true,
+      kind: "hint",
+    });
+  } catch (error) {
+    console.error("[avatar] hint failed", error);
+    say(t.failed(error.message));
+    logQuestion({
+      domain: domainName,
+      question: item.q,
+      success: false,
+      errorMessage: error.message,
+      kind: "hint",
+    });
+  }
+}
+
 async function explain(item, ok, lang, domainName) {
   await ensureVoice(lang);
   say(lang === "ja" ? "考え中…" : "Thinking…");
@@ -741,5 +827,6 @@ window.CGExamAvatar = {
   onResult,
   onQuestion,
   onLangChange,
+  hint,
 };
 init();

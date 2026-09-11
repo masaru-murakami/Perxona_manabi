@@ -15,10 +15,12 @@ function truncateText(value, maxLength) {
 }
 
 // POST /api/log-question — best-effort. Called by avatar.js right after
-// every askQuestion() call, success or failure. A write failure here is
-// logged server-side only and never surfaces to the learner-facing UI:
+// every askQuestion()/hint() call, success or failure. A write failure here
+// is logged server-side only and never surfaces to the learner-facing UI:
 // losing one analytics row is far better than breaking the question flow.
-// Request: { sessionId?, lang, domain?, question, reply?, success, errorMessage? }
+// Request: { sessionId?, lang, domain?, question, reply?, success, errorMessage?, kind? }
+// `kind` is "ask" (default) or "hint" — see samples/express/server.mjs's
+// matching route for why.
 export default async (req) => {
   let body;
   try {
@@ -38,6 +40,7 @@ export default async (req) => {
     sessionId: truncateText(body.sessionId, 100),
     lang: body.lang === "en" ? "en" : "ja",
     domain: truncateText(body.domain, 200),
+    kind: body.kind === "hint" ? "hint" : "ask",
     question,
     reply: truncateText(body.reply, 4000),
     success: Boolean(body.success),

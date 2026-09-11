@@ -141,6 +141,8 @@ h2{font-family:var(--display);font-size:19px;font-weight:600;margin:0 0 14px;let
 .hint{background:#FBF6EE;border:1px solid #E3D3B6;padding:16px 18px;font-size:13.5px;margin-bottom:30px;line-height:1.7}
 .hint b{display:block;margin-bottom:4px}
 footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:var(--muted);font-size:12px}
+.hint-row{margin:12px 0}
+.hint-row .btn{font-size:12px}
 .admin-link{color:var(--muted);text-decoration:none;font-family:var(--mono)}
 .admin-link:hover{color:var(--fill);text-decoration:underline}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 22px;border-radius:2px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:60}
@@ -207,6 +209,9 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
     <div class="qhead"><span class="qno" id="qno"></span><span class="qdomain" id="qdomain"></span></div>
     <p class="qtext" id="qtext"></p>
     <div class="choices" id="choices"></div>
+    <div class="hint-row" id="hint-row" hidden>
+      <button class="btn ghost" id="hint-btn"></button>
+    </div>
     <div id="feedback"></div>
     <div class="navrow">
       <button class="btn ghost" id="prev"></button>
@@ -306,7 +311,7 @@ ja:{
  hint2:"<b>20回の作り方</b>各回は10領域から4問ずつ、計40問。同じ回の中に同じ問題は入りません。20回を通すと1問あたり2〜3回登場し、そのつど選択肢の並び順が変わります。第1回から第20回の内容は誰が開いても同じです。",
  randomLabel:"ランダム出題",
  answered:n=>n+" / 40 解答", unanswered:n=>"未解答 "+n+" 問",
- prev:"前の問題", next:"次の問題", submit:"採点する", abort:"中断してトップへ",
+ prev:"前の問題", next:"次の問題", submit:"採点する", abort:"中断してトップへ", hintBtn:"ヒント",
  qno:(a,b)=>"問 "+a+"-"+b,
  correct:"正解", wrong:"不正解",
  fbCorrect:m=>"正答は "+m+" 。",
@@ -346,7 +351,7 @@ en:{
  hint2:"<b>How the 20 sets are built</b>Each set takes 4 questions from each of the 10 areas, 40 in total, with no repeats inside a set. Across all 20 sets a question appears two or three times, with the choices reordered each time. Sets 1 to 20 are identical for everyone who opens this file.",
  randomLabel:"Random set",
  answered:n=>n+" / 40 answered", unanswered:n=>n+" unanswered",
- prev:"Previous", next:"Next", submit:"Score my answers", abort:"Quit and return to the start",
+ prev:"Previous", next:"Next", submit:"Score my answers", abort:"Quit and return to the start", hintBtn:"Hint",
  qno:(a,b)=>"Q "+a+"-"+b,
  correct:"Correct", wrong:"Incorrect",
  fbCorrect:m=>"The answer is "+m+".",
@@ -436,6 +441,7 @@ function applyStatic(){
   $("next").textContent=t.next;
   $("submit").textContent=t.submit;
   $("abort").textContent=t.abort;
+  $("hint-btn").textContent=t.hintBtn;
   $("f-all").textContent=t.fAll;
   $("f-miss").textContent=t.fMiss;
   $("copy").textContent=t.copy;
@@ -514,6 +520,7 @@ function renderQ(){
   $("qdomain").textContent=t.domains[item.d];
   $("qtext").textContent=item.q;
   const reveal=(mode==="study"&&answers[cur]!==null);
+  $("hint-row").hidden=!(mode==="study"&&answers[cur]===null);
   const box=$("choices");box.innerHTML="";
   item.c.forEach((txt,i)=>{
     const b=document.createElement("button");
@@ -556,6 +563,7 @@ function choose(i){
 }
 $("prev").onclick=()=>{if(cur>0){cur--;renderQ();}};
 $("next").onclick=()=>{if(cur<39){cur++;renderQ();}};
+$("hint-btn").onclick=()=>window.CGExamAvatar?.hint();
 $("abort").onclick=()=>{if(confirm(T().confirmAbort)){clearInterval(timer);renderSets();show("s-start");}};
 $("submit").onclick=()=>{
   const un=answers.filter(a=>a===null).length;

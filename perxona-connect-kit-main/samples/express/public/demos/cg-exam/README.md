@@ -24,6 +24,7 @@ This demo composes two independent pieces:
 | "Ask the avatar more" button          | Calls `POST /api/demo-script` for a deeper, avatar-voiced explanation            | Yes       |
 | Result screen                         | Calls `POST /api/demo-script` for a spoken score summary + weak-point analysis   | Yes       |
 | "Ask the AI" free-text form           | Learner types (or speaks) any question; answered in the current UI language, grounded in whatever question is on screen | Yes |
+| "Hint" button (Practice mode, before answering) | Explains what the question is actually asking, then nudges toward how to think about it — the prompt explicitly forbids revealing the correct choice | Yes |
 
 Per-answer reactions are deliberately **not** LLM calls — they fire on every one of 40 questions, so
 latency and API cost both need to be zero. The LLM is reserved for the spots (on-demand explanation,
@@ -41,11 +42,12 @@ writing).
 
 ## Question analytics
 
-Every question sent through the "Ask the AI" form is logged (`POST /api/log-question`) regardless of
-whether `ANALYTICS_PASSWORD` is set — the point is to capture what learners are actually confused
-about. Set `ANALYTICS_PASSWORD` in `.env` (any value) to enable `GET /api/analytics` and the
-password-gated view at [`analytics.html`](analytics.html) — counts by domain/language/day plus a
-searchable table of every logged question. Leave it unset to keep the endpoint disabled (`501`).
+Every "Ask the AI" question *and* every "Hint" request is logged (`POST /api/log-question`,
+distinguished by a `kind: "ask" | "hint"` field) regardless of whether `ANALYTICS_PASSWORD` is set —
+the point is to capture what learners are actually confused about. Set `ANALYTICS_PASSWORD` in
+`.env` (any value) to enable `GET /api/analytics` and the password-gated view at
+[`analytics.html`](analytics.html) — counts by kind/domain/language/day plus a searchable table of
+every logged question. Leave it unset to keep the endpoint disabled (`501`).
 Local storage is a gitignored JSONL file (`data/question-log.jsonl`); the Netlify deploy
 ([`../../../../deploy/netlify-cg-exam/`](../../../../deploy/netlify-cg-exam/)) uses Netlify Blobs
 instead, since Functions have no durable local filesystem — see that folder's README for the
