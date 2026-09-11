@@ -700,7 +700,7 @@ async function hint() {
             `分野: ${domainName}`,
             `設問: ${item.q}`,
             `選択肢: ${item.c.join(" / ")}`,
-            "受験者にヒントを与えてください。まず、この設問が何を問うているのか(意図・着眼点)を200字程度で説明してください。そのうえで最後に、受験者自身に考えてもらうための問いかけを1つ添え、対話形式で応答を促してください。",
+            "受験者にヒントを与えてください。全体で200字程度に収めてください: まず1文だけで、この設問が何を問うているのか(意図・着眼点)を簡潔に説明し、そのあとすぐに、受験者自身に考えてもらうための短い問いかけを1つ添えてください。説明を長々と続けず、できるだけ早く問いかけに移ってください。",
             "重要: 正解の選択肢そのものや、選択肢を絞り込んで答えが一意に決まってしまうような決定的な情報は、絶対に教えないでください。あくまで考える方向性を示すだけにとどめてください。Motion Markupは付けないでください。",
           ]
         : [
@@ -708,7 +708,7 @@ async function hint() {
             `Domain: ${domainName}`,
             `Question: ${item.q}`,
             `Choices: ${item.c.join(" / ")}`,
-            "Give the test-taker a hint. First, in about 200 characters, explain what the question is actually asking (its intent/focus). Then end with one guiding question back to the test-taker, inviting them to reply and continue the conversation.",
+            "Give the test-taker a hint, about 200 characters total. In just one short sentence, state what the question is actually asking (its intent/focus) — don't elaborate. Then immediately ask one short guiding question back to the test-taker, inviting them to reply and continue the conversation. Get to that question quickly.",
             "Important: never reveal the correct choice, and never give away information decisive enough to narrow the choices down to a single answer. Only point at the direction of thinking. Do not add Motion Markup.",
           ]
     ).join("\n");
