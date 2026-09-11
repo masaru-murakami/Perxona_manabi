@@ -190,6 +190,7 @@ async function init() {
     // of starting in Japanese and immediately re-initializing for English.
     const initialLang = document.documentElement.lang === "en" ? "en" : "ja";
     lastLang = initialLang;
+    applyAskFormLang(initialLang);
     currentVoiceId = voiceForLang(initialLang) ?? voiceId ?? undefined;
     currentSceneId = sceneId;
     const { connect_token } = await requestJson("/api/connect-token");
@@ -382,16 +383,29 @@ async function onReveal(_item, ok, lang) {
 // avatar.js reaching into the quiz engine's own state.
 function onQuestion(item, lang, domainName) {
   currentQuestion = { item, lang, domainName };
+  lastLang = lang;
+  applyAskFormLang(lang);
+}
+
+// Called by index.html's setLang() on every toggle click, including on
+// screens (e.g. the home screen) that never call onQuestion. Without this,
+// toggling language before starting an exam left lastLang stale, and the
+// ask form would answer in the previous language until the next question
+// render caught it up.
+function onLangChange(lang) {
+  lastLang = lang;
   applyAskFormLang(lang);
 }
 
 // Free-text "ask the AI" form. Grounds the answer in whatever question is
 // currently on screen (set by onQuestion) but still answers reasonably if
-// the question is unrelated or no question is on screen yet.
+// the question is unrelated or no question is on screen yet. Always answers
+// in the current UI language (lastLang), not a possibly-stale
+// currentQuestion snapshot — see onLangChange above.
 async function askQuestion(rawText) {
   const question = rawText.trim();
   if (!question) return;
-  const lang = currentQuestion?.lang ?? lastLang;
+  const lang = lastLang;
   const t = ASK_TEXT[lang] ?? ASK_TEXT.ja;
   await ensureVoice(lang);
   say(t.thinking);
@@ -400,7 +414,11 @@ async function askQuestion(rawText) {
     return;
   }
   try {
-    const context = currentQuestion
+    // Only use currentQuestion if it was captured in the same language we're
+    // about to answer in — otherwise (language toggled on a screen that
+    // doesn't re-render a question, e.g. the home screen) it's stale text
+    // from the other language and would confuse the prompt.
+    const context = currentQuestion && currentQuestion.lang === lang
       ? (lang === "ja"
           ? [
               `分野: ${currentQuestion.domainName}`,
@@ -574,5 +592,12 @@ askForm?.addEventListener("submit", (event) => {
   });
 });
 
-window.CGExamAvatar = { onStart, onReveal, explain, onResult, onQuestion };
+window.CGExamAvatar = {
+  onStart,
+  onReveal,
+  explain,
+  onResult,
+  onQuestion,
+  onLangChange,
+};
 init();

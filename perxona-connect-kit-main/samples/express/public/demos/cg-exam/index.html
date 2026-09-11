@@ -441,6 +441,7 @@ function applyStatic(){
 }
 function setLang(l){
   lang=l;
+  window.CGExamAvatar?.onLangChange(l);
   $("langtoggle").setAttribute("data-lang",l);
   $("lang-en").setAttribute("aria-pressed",l==="en");
   $("lang-ja").setAttribute("aria-pressed",l==="ja");
