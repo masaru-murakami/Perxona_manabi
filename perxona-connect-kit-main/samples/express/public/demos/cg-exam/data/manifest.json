@@ -13,18 +13,6 @@
       }
     },
     {
-      "id": "world-heritage-2kyu",
-      "file": "world-heritage-2kyu.json",
-      "title": {
-        "ja": "世界遺産検定 2級",
-        "en": "World Heritage Study Certification, Level 2"
-      },
-      "summary": {
-        "ja": "練習セット 全8回・オリジナル問題バンク150問",
-        "en": "8 practice sets · 150-question original bank"
-      }
-    },
-    {
       "id": "cg-creator-expert",
       "file": "cg-creator-expert.json",
       "title": {
@@ -34,6 +22,18 @@
       "summary": {
         "ja": "模擬試験 全10回・オリジナル問題バンク150問",
         "en": "10 mock exams · 150-question original bank"
+      }
+    },
+    {
+      "id": "world-heritage-2kyu",
+      "file": "world-heritage-2kyu.json",
+      "title": {
+        "ja": "世界遺産検定 2級",
+        "en": "World Heritage Study Certification, Level 2"
+      },
+      "summary": {
+        "ja": "練習セット 全8回・オリジナル問題バンク150問",
+        "en": "8 practice sets · 150-question original bank"
       }
     }
   ]
