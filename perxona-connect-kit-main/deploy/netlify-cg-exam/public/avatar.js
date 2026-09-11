@@ -26,7 +26,15 @@ function requestJson(path, options = {}) {
       options.body === undefined ? undefined : JSON.stringify(options.body),
   }).then(async (response) => {
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.error ?? response.statusText);
+    if (!response.ok) {
+      // response.statusText is always "" over HTTP/2 (no reason phrase in
+      // the protocol) — which is how Netlify serves this app in production.
+      // Without this fallback, any non-ok response whose body isn't our own
+      // JSON { error } shape (a platform-level timeout/gateway error, say)
+      // surfaced as a blank error message. `HTTP <status>` guarantees the
+      // learner-facing failure text is never empty.
+      throw new Error(body.error || response.statusText || `HTTP ${response.status}`);
+    }
     return body;
   });
 }
