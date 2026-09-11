@@ -29,6 +29,22 @@ h2{font-family:var(--display);font-size:16px;font-weight:600;margin:0 0 12px}
 .hint{color:var(--muted);font-size:12.5px;margin-top:8px}
 [hidden]{display:none!important}
 
+.langtoggle{position:fixed;right:18px;top:18px;z-index:50;display:flex;align-items:center;
+  background:var(--surface);border:1px solid var(--ink);border-radius:999px;padding:3px;
+  box-shadow:0 6px 20px rgba(23,26,34,.20)}
+.langtoggle .knob{position:absolute;top:3px;left:3px;width:82px;height:calc(100% - 6px);
+  background:var(--ink);border-radius:999px;transition:transform .22s cubic-bezier(.4,0,.2,1)}
+.langtoggle[data-lang="en"] .knob{transform:translateX(82px)}
+.langtoggle button{position:relative;z-index:1;width:82px;border:0;background:transparent;
+  padding:9px 0;border-radius:999px;font-size:12.5px;letter-spacing:.04em;color:var(--muted);
+  cursor:pointer;transition:color .2s}
+.langtoggle button[aria-pressed="true"]{color:#fff;font-weight:600}
+@media (max-width:480px){
+  .langtoggle{right:12px;top:12px}
+  .langtoggle .knob,.langtoggle button{width:70px}
+  .langtoggle[data-lang="en"] .knob{transform:translateX(70px)}
+}
+
 .stat-row{display:flex;gap:14px;flex-wrap:wrap}
 .stat{flex:1;min-width:120px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
 .stat .n{font-family:var(--mono);font-size:26px;font-weight:600}
@@ -63,50 +79,58 @@ td.q, td.r{max-width:280px}
 </style>
 </head>
 <body>
+<div class="langtoggle" id="langtoggle" data-lang="ja" role="group" aria-label="Language / 表示言語">
+  <span class="knob" aria-hidden="true"></span>
+  <button id="lang-ja" aria-pressed="true">日本語</button>
+  <button id="lang-en" aria-pressed="false">English</button>
+</div>
 <div class="wrap">
   <div class="eyebrow">CG-ARTS EXAM PREP / INTERNAL</div>
-  <h1>質問ログ分析</h1>
-  <p class="sub">「AIに質問する」フォームに学習者が送った質問を集計・一覧します。</p>
+  <h1 id="t-h1"></h1>
+  <p class="sub" id="t-sub"></p>
 
   <div class="gate card" id="gate">
-    <h2>パスワード</h2>
+    <h2 id="t-gate-h2"></h2>
     <input type="password" id="gate-pw" placeholder="ANALYTICS_PASSWORD" autocomplete="off">
-    <button class="btn" id="gate-submit">見る</button>
+    <button class="btn" id="gate-submit"></button>
     <p class="err" id="gate-err" hidden></p>
     <p class="hint" id="gate-hint" hidden></p>
   </div>
 
   <div id="view" hidden>
     <div class="stat-row">
-      <div class="stat"><div class="n" id="stat-total">–</div><div class="l">総件数</div></div>
-      <div class="stat"><div class="n" id="stat-ask">–</div><div class="l">自由質問</div></div>
-      <div class="stat"><div class="n" id="stat-hint">–</div><div class="l">ヒント</div></div>
-      <div class="stat"><div class="n" id="stat-success">–</div><div class="l">回答成功</div></div>
-      <div class="stat"><div class="n" id="stat-ja">–</div><div class="l">日本語</div></div>
-      <div class="stat"><div class="n" id="stat-en">–</div><div class="l">English</div></div>
+      <div class="stat"><div class="n" id="stat-total">–</div><div class="l" id="t-stat-total"></div></div>
+      <div class="stat"><div class="n" id="stat-ask">–</div><div class="l" id="t-stat-ask"></div></div>
+      <div class="stat"><div class="n" id="stat-hint">–</div><div class="l" id="t-stat-hint"></div></div>
+      <div class="stat"><div class="n" id="stat-success">–</div><div class="l" id="t-stat-success"></div></div>
+      <div class="stat"><div class="n" id="stat-ja">–</div><div class="l" id="t-stat-ja"></div></div>
+      <div class="stat"><div class="n" id="stat-en">–</div><div class="l" id="t-stat-en"></div></div>
     </div>
 
     <div class="card">
-      <h2>分野別</h2>
+      <h2 id="t-h-domain"></h2>
       <div id="by-domain"></div>
     </div>
 
     <div class="card">
-      <h2>日別件数(直近14日)</h2>
+      <h2 id="t-h-days"></h2>
       <div class="days-scroll" id="by-day-scroll"><div class="days" id="by-day"></div></div>
     </div>
 
     <div class="card">
-      <h2>質問一覧</h2>
+      <h2 id="t-h-table"></h2>
       <div class="toolbar">
-        <input type="search" id="search" placeholder="質問・回答をキーワード検索…">
+        <input type="search" id="search">
         <span class="count-note" id="table-count"></span>
-        <button class="btn ghost" id="refresh">更新</button>
+        <button class="btn ghost" id="refresh"></button>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
-            <tr><th>日時</th><th>種別</th><th>言語</th><th>分野</th><th>質問</th><th>回答</th><th>結果</th></tr>
+            <tr>
+              <th id="t-col-ts"></th><th id="t-col-kind"></th><th id="t-col-lang"></th>
+              <th id="t-col-domain"></th><th id="t-col-q"></th><th id="t-col-r"></th><th id="t-col-result"></th>
+            </tr>
           </thead>
           <tbody id="table-body"></tbody>
         </table>
@@ -119,6 +143,55 @@ td.q, td.r{max-width:280px}
 const STORAGE_KEY = "cg-exam-analytics-pw";
 const TABLE_ROW_LIMIT = 300; // render cap after filtering — keeps the DOM light on a large log
 
+const I18N = {
+  ja: {
+    docTitle: "質問ログ分析 — CG検定模擬試験",
+    h1: "質問ログ分析",
+    sub: "「AIに質問する」フォームに学習者が送った質問を集計・一覧します。",
+    gateH2: "パスワード",
+    gateSubmit: "見る",
+    gateErrWrong: "パスワードが違います。",
+    gateErrLoad: (m) => `読み込みに失敗しました: ${m}`,
+    gateHintNotSet:
+      "ANALYTICS_PASSWORD がサーバーに設定されていません。.env（本番は Netlify の環境変数）に設定し、サーバーを再起動/再デプロイしてください。",
+    statTotal: "総件数", statAsk: "自由質問", statHint: "ヒント", statSuccess: "回答成功",
+    statJa: "日本語", statEn: "English",
+    hDomain: "分野別", hDays: "日別件数(直近14日)", hTable: "質問一覧",
+    searchPh: "質問・回答をキーワード検索…", refresh: "更新",
+    colTs: "日時", colKind: "種別", colLang: "言語", colDomain: "分野", colQ: "質問", colR: "回答", colResult: "結果",
+    tagHint: "ヒント", tagAsk: "質問", tagOk: "成功", tagNg: "失敗",
+    noData: "まだデータがありません。",
+    uncategorized: "(未分類)",
+    countShown: (shown, filtered, total) => `${shown} / ${filtered} 件を表示（全 ${total} 件）`,
+    countAll: (filtered, total) => `${filtered} 件（全 ${total} 件）`,
+    locale: "ja-JP",
+  },
+  en: {
+    docTitle: "Question Log Analytics — CG Exam Mock Tests",
+    h1: "Question Log Analytics",
+    sub: 'Aggregates and lists the questions learners sent through the "Ask the AI" form.',
+    gateH2: "Password",
+    gateSubmit: "View",
+    gateErrWrong: "Incorrect password.",
+    gateErrLoad: (m) => `Failed to load: ${m}`,
+    gateHintNotSet:
+      "ANALYTICS_PASSWORD isn't set on the server. Set it in .env (or Netlify's environment variables in production), then restart or redeploy the server.",
+    statTotal: "Total", statAsk: "Free questions", statHint: "Hints", statSuccess: "Successful replies",
+    statJa: "Japanese", statEn: "English",
+    hDomain: "By domain", hDays: "Daily count (last 14 days)", hTable: "Question log",
+    searchPh: "Search questions and replies…", refresh: "Refresh",
+    colTs: "Date", colKind: "Kind", colLang: "Lang", colDomain: "Domain", colQ: "Question", colR: "Reply", colResult: "Result",
+    tagHint: "Hint", tagAsk: "Ask", tagOk: "OK", tagNg: "Failed",
+    noData: "No data yet.",
+    uncategorized: "(Uncategorized)",
+    countShown: (shown, filtered, total) => `Showing ${shown} / ${filtered} (of ${total} total)`,
+    countAll: (filtered, total) => `${filtered} (of ${total} total)`,
+    locale: "en-US",
+  },
+};
+let lang = "ja";
+const t = () => I18N[lang];
+
 const gate = document.getElementById("gate");
 const gatePw = document.getElementById("gate-pw");
 const gateSubmit = document.getElementById("gate-submit");
@@ -129,8 +202,56 @@ const searchInput = document.getElementById("search");
 const refreshBtn = document.getElementById("refresh");
 const tableBody = document.getElementById("table-body");
 const tableCount = document.getElementById("table-count");
+const langtoggle = document.getElementById("langtoggle");
 
 let entries = [];
+// Tracks which gate message (if any) is currently showing, so switching
+// language while the gate is up re-renders the same message in the new
+// language instead of leaving it stale or clearing it.
+let gateState = null; // null | "wrong" | { load: message } | "notset"
+
+function applyStatic() {
+  const s = t();
+  document.documentElement.lang = lang;
+  document.title = s.docTitle;
+  document.getElementById("t-h1").textContent = s.h1;
+  document.getElementById("t-sub").textContent = s.sub;
+  document.getElementById("t-gate-h2").textContent = s.gateH2;
+  gateSubmit.textContent = s.gateSubmit;
+  document.getElementById("t-stat-total").textContent = s.statTotal;
+  document.getElementById("t-stat-ask").textContent = s.statAsk;
+  document.getElementById("t-stat-hint").textContent = s.statHint;
+  document.getElementById("t-stat-success").textContent = s.statSuccess;
+  document.getElementById("t-stat-ja").textContent = s.statJa;
+  document.getElementById("t-stat-en").textContent = s.statEn;
+  document.getElementById("t-h-domain").textContent = s.hDomain;
+  document.getElementById("t-h-days").textContent = s.hDays;
+  document.getElementById("t-h-table").textContent = s.hTable;
+  searchInput.placeholder = s.searchPh;
+  refreshBtn.textContent = s.refresh;
+  document.getElementById("t-col-ts").textContent = s.colTs;
+  document.getElementById("t-col-kind").textContent = s.colKind;
+  document.getElementById("t-col-lang").textContent = s.colLang;
+  document.getElementById("t-col-domain").textContent = s.colDomain;
+  document.getElementById("t-col-q").textContent = s.colQ;
+  document.getElementById("t-col-r").textContent = s.colR;
+  document.getElementById("t-col-result").textContent = s.colResult;
+
+  if (gateState === "wrong") showGateError(s.gateErrWrong, false);
+  else if (gateState && gateState.load) showGateError(s.gateErrLoad(gateState.load), false);
+  else if (gateState === "notset") showGateHint(s.gateHintNotSet, false);
+}
+
+function setLang(l) {
+  lang = l;
+  langtoggle.dataset.lang = l;
+  document.getElementById("lang-ja").setAttribute("aria-pressed", l === "ja");
+  document.getElementById("lang-en").setAttribute("aria-pressed", l === "en");
+  applyStatic();
+  if (!view.hidden) render();
+}
+document.getElementById("lang-ja").onclick = () => setLang("ja");
+document.getElementById("lang-en").onclick = () => setLang("en");
 
 async function fetchAnalytics(password) {
   const res = await fetch("/api/analytics", {
@@ -145,19 +266,24 @@ async function fetchAnalytics(password) {
   return body;
 }
 
-function showGateError(message) {
+function showGateError(message, remember = true) {
+  if (remember) gateState = { load: message };
   gateErr.textContent = message;
   gateErr.hidden = false;
+  gateHint.hidden = true;
 }
 
-function showGateHint(message) {
+function showGateHint(message, remember = true) {
+  if (remember) gateState = "notset";
   gateHint.textContent = message;
   gateHint.hidden = false;
+  gateErr.hidden = true;
 }
 
 async function tryLoad(password) {
   gateErr.hidden = true;
   gateHint.hidden = true;
+  gateState = null;
   try {
     const data = await fetchAnalytics(password);
     try {
@@ -174,13 +300,14 @@ async function tryLoad(password) {
       sessionStorage.removeItem(STORAGE_KEY);
     } catch {}
     if (error.status === 501) {
-      showGateHint(
-        "ANALYTICS_PASSWORD がサーバーに設定されていません。.env（本番は Netlify の環境変数）に設定し、サーバーを再起動/再デプロイしてください。",
-      );
+      gateState = "notset";
+      showGateHint(t().gateHintNotSet, false);
     } else if (error.status === 401) {
-      showGateError("パスワードが違います。");
+      gateState = "wrong";
+      showGateError(t().gateErrWrong, false);
     } else {
-      showGateError(`読み込みに失敗しました: ${error.message}`);
+      gateState = { load: error.message };
+      showGateError(t().gateErrLoad(error.message), false);
     }
   }
 }
@@ -211,7 +338,7 @@ function barList(container, counts, total) {
   container.innerHTML = "";
   const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   if (rows.length === 0) {
-    container.innerHTML = '<p class="hint">まだデータがありません。</p>';
+    container.innerHTML = `<p class="hint">${escapeHtml(t().noData)}</p>`;
     return;
   }
   const max = rows[0][1];
@@ -260,7 +387,7 @@ function escapeHtml(s) {
 
 function formatTs(iso) {
   try {
-    return new Date(iso).toLocaleString("ja-JP", {
+    return new Date(iso).toLocaleString(t().locale, {
       month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
     });
   } catch {
@@ -269,6 +396,7 @@ function formatTs(iso) {
 }
 
 function renderTable() {
+  const s = t();
   const q = searchInput.value.trim().toLowerCase();
   const filtered = q
     ? entries.filter(
@@ -281,19 +409,19 @@ function renderTable() {
   const shown = filtered.slice(0, TABLE_ROW_LIMIT);
   tableCount.textContent =
     filtered.length > shown.length
-      ? `${shown.length} / ${filtered.length} 件を表示（全 ${entries.length} 件）`
-      : `${filtered.length} 件（全 ${entries.length} 件）`;
+      ? s.countShown(shown.length, filtered.length, entries.length)
+      : s.countAll(filtered.length, entries.length);
   tableBody.innerHTML = shown
     .map(
       (e) => `
     <tr>
       <td>${formatTs(e.ts)}</td>
-      <td>${e.kind === "hint" ? '<span class="tag hint">ヒント</span>' : '<span class="tag ask">質問</span>'}</td>
+      <td>${e.kind === "hint" ? `<span class="tag hint">${escapeHtml(s.tagHint)}</span>` : `<span class="tag ask">${escapeHtml(s.tagAsk)}</span>`}</td>
       <td>${e.lang === "en" ? "EN" : "JA"}</td>
       <td>${escapeHtml(e.domain ?? "—")}</td>
       <td class="q">${escapeHtml(e.question)}</td>
       <td class="r">${escapeHtml(e.reply ?? (e.errorMessage ?? "—"))}</td>
-      <td>${e.success ? '<span class="tag ok">成功</span>' : '<span class="tag ng">失敗</span>'}</td>
+      <td>${e.success ? `<span class="tag ok">${escapeHtml(s.tagOk)}</span>` : `<span class="tag ng">${escapeHtml(s.tagNg)}</span>`}</td>
     </tr>`,
     )
     .join("");
@@ -315,7 +443,7 @@ function render() {
 
   const domainCounts = {};
   for (const e of entries) {
-    const key = e.domain || "(未分類)";
+    const key = e.domain || t().uncategorized;
     domainCounts[key] = (domainCounts[key] ?? 0) + 1;
   }
   barList(document.getElementById("by-domain"), domainCounts, total);
@@ -326,6 +454,8 @@ function render() {
   daysScroll.scrollLeft = daysScroll.scrollWidth;
   renderTable();
 }
+
+applyStatic();
 
 // Auto-load if a password was already entered earlier this tab session.
 (() => {
