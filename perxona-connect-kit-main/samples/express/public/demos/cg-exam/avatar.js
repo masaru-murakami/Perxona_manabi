@@ -144,7 +144,7 @@ function waitUntilReady(timeoutMs = 8000) {
 // cached — only the voice/TTS config actually changes).
 const VOICE_BY_LANG = {
   ja: "01KT9NE031K3MWGCXMYZ078TKD", // Female - cheerful and clear (Japanese only)
-  en: "01KZFF41AV1D4FJNM81PZSSX6E", // Female - warm and cheerful (multilingual)
+  en: "01KTBJGRFKWS029KQKQBC3318V", // Female - cute and fast (For English) — younger-sounding
 };
 
 // "Japanese accent" mode is the fun opposite of the fix above: it forces the
