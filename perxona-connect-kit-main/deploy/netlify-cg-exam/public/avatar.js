@@ -178,7 +178,24 @@ function setStatus(text) {
   statusEl.textContent = text ?? "";
 }
 
+// Cuts off whatever the avatar might still be mid-saying/queued. present()
+// alone wouldn't do this: per the SDK's own docs, calling it again while
+// something is still playing queues behind it rather than interrupting.
+// Safe to call when nothing is playing (interruptPresentation() just clears
+// an empty queue). Called from say() — so every fresh avatar utterance
+// silences whatever came before it — and from onQuestion(), so navigating
+// away, answering, or a language toggle also stops stale audio even when
+// nothing new is about to speak right away.
+function stopSpeaking() {
+  try {
+    presenter.interruptPresentation?.();
+  } catch (error) {
+    console.error("[avatar] interruptPresentation failed", error);
+  }
+}
+
 function say(text) {
+  stopSpeaking();
   const clean = (text ?? "").replace(/\[MOTION[^\]]*\]/gi, "").trim();
   bubble.textContent = clean;
   bubble.hidden = !clean;
@@ -561,8 +578,9 @@ function onQuestion(item, lang, domainName) {
   lastLang = lang;
   // Every render here means a different question, an answer was just
   // submitted (hiding the Hint button), or a language toggle — none of
-  // which a live hint dialogue should survive.
+  // which a live hint dialogue (or its audio) should survive.
   hintConversation = null;
+  stopSpeaking();
   applyAskFormLang(lang);
 }
 
@@ -573,6 +591,7 @@ function onQuestion(item, lang, domainName) {
 // render caught it up.
 function onLangChange(lang) {
   lastLang = lang;
+  stopSpeaking();
   applyAskFormLang(lang);
 }
 
