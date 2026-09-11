@@ -719,7 +719,7 @@ async function hint() {
             `分野: ${domainName}`,
             `設問: ${item.q}`,
             `選択肢: ${item.c.join(" / ")}`,
-            "受験者にヒントを与えてください。全体で200字程度に収めてください: まず1文だけで、この設問が何を問うているのか(意図・着眼点)を簡潔に説明し、そのあとすぐに、受験者自身に考えてもらうための短い問いかけを1つ添えてください。説明を長々と続けず、できるだけ早く問いかけに移ってください。",
+            "受験者にヒントを与えてください。全体で200字程度に収めてください: まず1文だけで、この設問が何を問うているのか(意図・着眼点)を簡潔に説明し、そのあとすぐに、選択肢を消去法で1つずつ検討させる短い問いかけを1つ添えてください(例:「まず明らかに違うと思う選択肢はどれですか？なぜそう思いますか？」)。説明を長々と続けず、できるだけ早く問いかけに移ってください。",
             "重要: 正解の選択肢そのものや、選択肢を絞り込んで答えが一意に決まってしまうような決定的な情報は、絶対に教えないでください。あくまで考える方向性を示すだけにとどめてください。Motion Markupは付けないでください。",
           ]
         : [
@@ -727,7 +727,7 @@ async function hint() {
             `Domain: ${domainName}`,
             `Question: ${item.q}`,
             `Choices: ${item.c.join(" / ")}`,
-            "Give the test-taker a hint, about 200 characters total. In just one short sentence, state what the question is actually asking (its intent/focus) — don't elaborate. Then immediately ask one short guiding question back to the test-taker, inviting them to reply and continue the conversation. Get to that question quickly.",
+            "Give the test-taker a hint, about 200 characters total. In just one short sentence, state what the question is actually asking (its intent/focus) — don't elaborate. Then immediately ask one short question that nudges them to work through the choices by elimination (e.g., 'Which option do you think is clearly wrong first, and why?'). Get to that question quickly.",
             "Important: never reveal the correct choice, and never give away information decisive enough to narrow the choices down to a single answer. Only point at the direction of thinking. Do not add Motion Markup.",
           ]
     ).join("\n");
@@ -801,7 +801,7 @@ async function continueHint(rawText) {
             `選択肢: ${item.c.join(" / ")}`,
             "これまでの会話:",
             transcript,
-            "受験者の直前の発言を踏まえ、対話を続けてください。2〜3文程度の自然な話し言葉で応答し、必要なら次の問いかけを1つ添えてください。",
+            "受験者の直前の発言を踏まえ、対話を続けてください。2〜3文程度の自然な話し言葉で応答し、まだ絞り込めていない選択肢があれば、消去法で1つずつ検討を進められるような問いかけを添えてください(例:他にも違うと思う選択肢はありますか？残ったものはなぜ怪しいと思いますか？)。",
             "重要: 正解の選択肢そのものや、選択肢を絞り込んで答えが一意に決まってしまうような決定的な情報は、絶対に教えないでください。Motion Markupは付けないでください。",
           ]
         : [
@@ -811,7 +811,7 @@ async function continueHint(rawText) {
             `Choices: ${item.c.join(" / ")}`,
             "Conversation so far:",
             transcript,
-            "Respond to the test-taker's latest message, continuing the dialogue in 2-3 natural spoken sentences. Add one follow-up question if it helps.",
+            "Respond to the test-taker's latest message, continuing the dialogue in 2-3 natural spoken sentences. If choices remain unnarrowed, add a follow-up question that nudges them to keep eliminating options one by one (e.g., asking which remaining option looks next-most-doubtful, and why).",
             "Important: never reveal the correct choice, and never give away information decisive enough to narrow the choices down to a single answer. Do not add Motion Markup.",
           ]
     ).join("\n");
