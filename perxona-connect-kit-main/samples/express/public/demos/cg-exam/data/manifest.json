@@ -23,6 +23,18 @@
         "ja": "練習セット 全8回・オリジナル問題バンク150問",
         "en": "8 practice sets · 150-question original bank"
       }
+    },
+    {
+      "id": "cg-creator-expert",
+      "file": "cg-creator-expert.json",
+      "title": {
+        "ja": "CGクリエイター検定 エキスパート",
+        "en": "CG Creator Certification, Expert"
+      },
+      "summary": {
+        "ja": "模擬試験 全10回・オリジナル問題バンク150問",
+        "en": "10 mock exams · 150-question original bank"
+      }
     }
   ]
 }
