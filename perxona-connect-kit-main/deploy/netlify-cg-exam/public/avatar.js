@@ -31,6 +31,48 @@ function requestJson(path, options = {}) {
   });
 }
 
+// Anonymous per-browser id (no login system exists) so the analytics view
+// can group one learner's questions together across a session. Falls back
+// to a per-page-load id if localStorage is unavailable (private mode,
+// blocked) — analytics just won't be able to group that visitor's questions
+// across reloads.
+function getSessionId() {
+  const key = "cg-exam-session-id";
+  const fresh = () =>
+    crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  try {
+    let id = localStorage.getItem(key);
+    if (!id) {
+      id = fresh();
+      localStorage.setItem(key, id);
+    }
+    return id;
+  } catch {
+    return fresh();
+  }
+}
+const sessionId = getSessionId();
+
+// Fire-and-forget logging for the analytics view (analytics.html /
+// GET /api/analytics) — never lets a logging failure affect the
+// learner-facing question flow, so it's deliberately not awaited by callers.
+function logQuestion({ domain, question, reply, success, errorMessage }) {
+  requestJson("/api/log-question", {
+    method: "POST",
+    body: {
+      sessionId,
+      lang: lastLang,
+      domain: domain ?? null,
+      question,
+      reply: reply ?? null,
+      success,
+      errorMessage: errorMessage ?? null,
+    },
+  }).catch((error) => {
+    console.error("[avatar] failed to log question for analytics", error);
+  });
+}
+
 function loadPresenterEngine(url) {
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
@@ -471,18 +513,29 @@ async function askQuestion(rawText) {
   if (!question) return;
   const lang = lastLang;
   const t = ASK_TEXT[lang] ?? ASK_TEXT.ja;
+  // Only trust currentQuestion if it was captured in the same language we're
+  // about to answer in — otherwise (language toggled on a screen that
+  // doesn't re-render a question, e.g. the home screen) it's stale text from
+  // the other language and would confuse both the prompt and the analytics
+  // log's domain field.
+  const hasFreshContext = Boolean(
+    currentQuestion && currentQuestion.lang === lang,
+  );
+  const questionDomain = hasFreshContext ? currentQuestion.domainName : null;
   await ensureVoice(lang);
   say(t.thinking);
   if (!config || config.mock || !config.chat) {
     say(t.disabled);
+    logQuestion({
+      domain: questionDomain,
+      question,
+      success: false,
+      errorMessage: "chat_disabled",
+    });
     return;
   }
   try {
-    // Only use currentQuestion if it was captured in the same language we're
-    // about to answer in — otherwise (language toggled on a screen that
-    // doesn't re-render a question, e.g. the home screen) it's stale text
-    // from the other language and would confuse the prompt.
-    const context = currentQuestion && currentQuestion.lang === lang
+    const context = hasFreshContext
       ? (lang === "ja"
           ? [
               `分野: ${currentQuestion.domainName}`,
@@ -523,9 +576,21 @@ async function askQuestion(rawText) {
     });
     const motionId = pickMotion(MOTION_KEYWORDS.thinking);
     await speak(withMotion(result.script, motionId));
+    logQuestion({
+      domain: questionDomain,
+      question,
+      reply: result.reply,
+      success: true,
+    });
   } catch (error) {
     console.error("[avatar] ask failed", error);
     say(t.failed(error.message));
+    logQuestion({
+      domain: questionDomain,
+      question,
+      success: false,
+      errorMessage: error.message,
+    });
   }
 }
 

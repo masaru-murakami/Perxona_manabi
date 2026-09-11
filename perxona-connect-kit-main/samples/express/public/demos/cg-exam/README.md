@@ -23,15 +23,33 @@ This demo composes two independent pieces:
 | Practice mode: answer revealed        | Speaks a canned correct/wrong reaction line + matching motion                    | No        |
 | "Ask the avatar more" button          | Calls `POST /api/demo-script` for a deeper, avatar-voiced explanation            | Yes       |
 | Result screen                         | Calls `POST /api/demo-script` for a spoken score summary + weak-point analysis   | Yes       |
+| "Ask the AI" free-text form           | Learner types (or speaks) any question; answered in the current UI language, grounded in whatever question is on screen | Yes |
 
 Per-answer reactions are deliberately **not** LLM calls — they fire on every one of 40 questions, so
-latency and API cost both need to be zero. The LLM is reserved for the two spots (on-demand
-explanation, end-of-exam summary) where a generated response is actually worth the round trip. See
-`docs/perxona_docs_summary.md.pdf` §6 in the repo root for the original design note this follows.
+latency and API cost both need to be zero. The LLM is reserved for the spots (on-demand explanation,
+end-of-exam summary, the free-text ask form) where a generated response is actually worth the round
+trip. See `docs/perxona_docs_summary.md.pdf` §6 in the repo root for the original design note this
+follows.
 
 Motion IDs are never hard-coded: `avatar.js` fetches the selected avatar's real
 `GET /api/avatars/:id/motions` catalog and picks an ID by keyword match against the motion names
 (falling back to `DEMO_DEFAULT_MOTION_ID`), so this keeps working even if the catalog changes.
+
+The "Ask the AI" form's mic button uses the browser's built-in Web Speech API — no server changes or
+extra key — and just stays hidden via feature detection on browsers without it (e.g. Firefox as of
+writing).
+
+## Question analytics
+
+Every question sent through the "Ask the AI" form is logged (`POST /api/log-question`) regardless of
+whether `ANALYTICS_PASSWORD` is set — the point is to capture what learners are actually confused
+about. Set `ANALYTICS_PASSWORD` in `.env` (any value) to enable `GET /api/analytics` and the
+password-gated view at [`analytics.html`](analytics.html) — counts by domain/language/day plus a
+searchable table of every logged question. Leave it unset to keep the endpoint disabled (`501`).
+Local storage is a gitignored JSONL file (`data/question-log.jsonl`); the Netlify deploy
+([`../../../../deploy/netlify-cg-exam/`](../../../../deploy/netlify-cg-exam/)) uses Netlify Blobs
+instead, since Functions have no durable local filesystem — see that folder's README for the
+production setup.
 
 ## Prerequisites
 
@@ -52,10 +70,12 @@ Open <http://localhost:8083/demos/cg-exam/>.
 
 ```text
 demos/cg-exam/
-├── index.html    — quiz engine (adapted from the standalone mock exam file) + avatar panel markup
-├── avatar.js     — Presenter SDK integration (all window.CGExamAvatar.* hooks)
-├── avatar.css    — floating avatar panel styles, scoped under .avatar-panel
-└── README.md     — this file
+├── index.html      — quiz engine (adapted from the standalone mock exam file) + avatar panel markup
+├── avatar.js       — Presenter SDK integration (all window.CGExamAvatar.* hooks)
+├── avatar.css      — floating avatar panel styles, scoped under .avatar-panel
+├── analytics.html  — password-gated view of logged "Ask the AI" questions (see server.mjs's
+│                     /api/log-question + /api/analytics)
+└── README.md       — this file
 ```
 
 ## Extending

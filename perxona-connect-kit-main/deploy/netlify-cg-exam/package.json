@@ -1,0 +1,9 @@
+{
+  "name": "cg-exam-netlify-deploy",
+  "private": true,
+  "type": "module",
+  "description": "Dependencies for netlify/functions/ in this standalone cg-exam Netlify deploy (see README.md). Netlify runs `npm install` here (base dir) before bundling Functions.",
+  "dependencies": {
+    "@netlify/blobs": "^11.0.3"
+  }
+}

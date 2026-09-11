@@ -1,4 +1,6 @@
 import express from "express";
+import fs from "node:fs/promises";
+import path from "node:path";
 
 // ── Config ──────────────────────────────────────────────────
 
@@ -43,6 +45,16 @@ const fixedPresenterTarget = hasCompletePresenterTarget
 // through the same upstream account; there is no per-user login.
 const CONNECT_EMAIL = process.env.PERXONA_CONNECT_EMAIL;
 const CONNECT_PASSWORD = process.env.PERXONA_CONNECT_PASSWORD;
+
+// Password gating GET /api/analytics — set to enable the cg-exam demo's
+// learner-question analytics view (see QUESTION_LOG_PATH below). Unset by
+// default: the endpoint stays disabled (501) until an operator opts in.
+const ANALYTICS_PASSWORD = process.env.ANALYTICS_PASSWORD;
+// Local, gitignored log of cg-exam's free-text "ask the AI" questions — one
+// JSON object per line. Analogous to Netlify Blobs in the
+// deploy/netlify-cg-exam Functions port of this endpoint.
+const QUESTION_LOG_PATH = path.join(process.cwd(), "data", "question-log.jsonl");
+const QUESTION_LOG_MAX_ENTRIES = 5000; // analytics view reads at most this many, newest first
 
 if (hasConfiguredPresenterTarget && !hasCompletePresenterTarget) {
   console.error(
@@ -815,6 +827,107 @@ app.post(
     res.json({ reply: demoScriptResult.reply.trim(), script, motions });
   }),
 );
+
+// ── Question analytics (cg-exam's free-text "ask the AI" form) ─────────────
+//
+// The service's value is in listening to what learners are confused about —
+// this logs every free-text question the ask form sends, so an operator can
+// review it in analytics.html. Local storage is a flat gitignored JSONL file
+// (see QUESTION_LOG_PATH above); the Netlify Functions port of these two
+// routes (deploy/netlify-cg-exam/netlify/functions/) uses Netlify Blobs
+// instead, since Functions have no durable local filesystem.
+
+function truncateText(value, maxLength) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed.length > maxLength ? trimmed.slice(0, maxLength) : trimmed;
+}
+
+async function appendQuestionLogEntry(entry) {
+  await fs.mkdir(path.dirname(QUESTION_LOG_PATH), { recursive: true });
+  await fs.appendFile(QUESTION_LOG_PATH, JSON.stringify(entry) + "\n", "utf8");
+}
+
+async function readQuestionLogEntries() {
+  let raw;
+  try {
+    raw = await fs.readFile(QUESTION_LOG_PATH, "utf8");
+  } catch (err) {
+    if (err.code === "ENOENT") return [];
+    throw err;
+  }
+  const entries = [];
+  for (const line of raw.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      entries.push(JSON.parse(trimmed));
+    } catch {
+      // Skip a corrupted line (e.g. a partial write after a crash) instead
+      // of failing the whole analytics view over one bad row.
+    }
+  }
+  entries.reverse(); // newest first
+  return entries.slice(0, QUESTION_LOG_MAX_ENTRIES);
+}
+
+// POST /api/log-question — best-effort, fire-and-forget. Called by avatar.js
+// right after every askQuestion() call, success or failure. Responds before
+// the write finishes and never surfaces a write failure to the learner-
+// facing UI: losing one analytics row is far better than breaking the
+// question flow over it.
+// Request: { sessionId?, lang, domain?, question, reply?, success, errorMessage? }
+app.post("/api/log-question", async (req, res) => {
+  const body = req.body ?? {};
+  const question = truncateText(body.question, 2000);
+  if (!question) {
+    res.status(400).json({ error: "'question' is required." });
+    return;
+  }
+  const entry = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    ts: new Date().toISOString(),
+    sessionId: truncateText(body.sessionId, 100),
+    lang: body.lang === "en" ? "en" : "ja",
+    domain: truncateText(body.domain, 200),
+    question,
+    reply: truncateText(body.reply, 4000),
+    success: Boolean(body.success),
+    errorMessage: truncateText(body.errorMessage, 500),
+  };
+  res.status(204).end();
+  try {
+    await appendQuestionLogEntry(entry);
+  } catch (err) {
+    console.error("[analytics] failed to write question log:", err);
+  }
+});
+
+// GET /api/analytics — protected by ANALYTICS_PASSWORD (header
+// 'x-analytics-password'). Returns logged cg-exam questions, newest first,
+// for analytics.html. 501 until ANALYTICS_PASSWORD is set; 401 on a missing
+// or wrong password.
+app.get("/api/analytics", async (req, res) => {
+  if (!ANALYTICS_PASSWORD) {
+    res.status(501).json({
+      error:
+        "ANALYTICS_PASSWORD not configured. Set it in .env to enable the analytics view.",
+    });
+    return;
+  }
+  if (req.get("x-analytics-password") !== ANALYTICS_PASSWORD) {
+    res.status(401).json({ error: "Invalid analytics password." });
+    return;
+  }
+  try {
+    const entries = await readQuestionLogEntries();
+    res.json({ count: entries.length, entries });
+  } catch (err) {
+    console.error("[analytics] failed to read question log:", err);
+    res.status(500).json({ error: "Failed to read the question log." });
+  }
+});
 
 // ── Chatbot routes ──────────────────────────────────────────────────────────
 // GET    /api/chatbots              → Page { items: [{ id, name, status }] }

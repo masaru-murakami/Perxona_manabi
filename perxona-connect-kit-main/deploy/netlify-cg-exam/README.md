@@ -40,9 +40,21 @@ env vars at cold start, so a redeploy after adding/changing them is the reliable
 | `LLM_PROVIDER` | No | `openai` (default) or `anthropic` |
 | `LLM_BASE_URL` | No | e.g. `https://api.anthropic.com` when `LLM_PROVIDER=anthropic` |
 | `LLM_MODEL` | No | e.g. `claude-sonnet-5` |
+| `ANALYTICS_PASSWORD` | No | Leave unset to disable `GET /api/analytics` (501) and `/analytics.html` |
 
 These are never committed to the repo — set them only in Netlify's dashboard (or via `netlify env:set`
 with the Netlify CLI, if you use that instead of the dashboard).
+
+### Question analytics (optional)
+
+Every question a learner sends through the "ask the AI" form is logged (regardless of
+`ANALYTICS_PASSWORD`) via `POST /api/log-question`, stored in [Netlify
+Blobs](https://docs.netlify.com/blobs/overview/) — no separate database to provision. Set
+`ANALYTICS_PASSWORD` to any password to enable `/analytics.html`, a password-gated view (counts by
+domain/language/day, a searchable table of every logged question) at
+`https://<your-site>.netlify.app/analytics.html`. See
+[`samples/express/server.mjs`](../../samples/express/server.mjs)'s `/api/log-question` /
+`/api/analytics` routes for the local (JSONL file) equivalent this Netlify Functions pair mirrors.
 
 ## 3. Push-to-deploy
 
@@ -58,3 +70,7 @@ deploy automatically — no extra step needed.
 - **No catalog picker.** This deploy assumes `DEMO_DEFAULT_AVATAR_ID` / `SCENE_ID` / `VOICE_ID` are
   already known (see [`../../samples/express/public/demos/cg-exam/README.md`](../../samples/express/public/demos/cg-exam/README.md)
   for how the values used locally were found via `GET /api/avatars` etc.).
+- **Question log writes are read-modify-write, not atomic.** `log-question.mjs` reads the whole
+  Netlify Blobs entry list, appends, and writes it back — two questions logged in the same instant
+  could race and one could be dropped. Fine at demo-level traffic; not a concern to fix unless usage
+  grows enough to need a proper per-entry key scheme.

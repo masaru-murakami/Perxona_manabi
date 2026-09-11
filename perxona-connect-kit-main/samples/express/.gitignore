@@ -5,3 +5,7 @@ node_modules/
 *.swp
 tests/benchmark-results/
 tests/benchmark/manual.config.mjs
+
+# Local analytics log for the cg-exam ask-question form (see server.mjs's
+# /api/log-question / /api/analytics) — learner question data, never commit it.
+data/
