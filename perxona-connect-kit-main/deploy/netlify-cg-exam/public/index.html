@@ -34,7 +34,8 @@ h1{font-family:var(--display);font-weight:600;font-size:30px;line-height:1.3;let
 .lightbar i:nth-child(1){background:var(--key)}
 .lightbar i:nth-child(2){background:var(--fill)}
 .lightbar i:nth-child(3){background:var(--back)}
-.langtoggle{position:fixed;right:18px;top:18px;z-index:50;display:flex;align-items:center;
+.topnav{position:fixed;right:18px;top:18px;z-index:50;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.langtoggle{position:relative;display:flex;align-items:center;
   background:var(--surface);border:1px solid var(--ink);border-radius:999px;padding:3px;
   box-shadow:0 6px 20px rgba(23,26,34,.20)}
 .langtoggle .knob{position:absolute;top:3px;left:3px;width:82px;height:calc(100% - 6px);
@@ -44,6 +45,12 @@ h1{font-family:var(--display);font-weight:600;font-size:30px;line-height:1.3;let
   padding:9px 0;border-radius:999px;font-size:12.5px;letter-spacing:.04em;color:var(--muted);
   transition:color .2s}
 .langtoggle button[aria-pressed="true"]{color:#fff;font-weight:600}
+.switch-exam-fixed{background:var(--surface);border:1px solid var(--ink);
+  border-radius:999px;padding:9px 18px;font-family:var(--mono);font-size:11.5px;
+  letter-spacing:.04em;color:var(--ink);cursor:pointer;white-space:nowrap;
+  box-shadow:0 6px 20px rgba(23,26,34,.20);transition:background .2s,color .2s}
+.switch-exam-fixed:hover{background:var(--ink);color:#fff}
+.switch-exam-fixed[hidden]{display:none}
 
 .spec{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);background:var(--surface);margin-bottom:34px}
 .spec div{padding:13px 15px;border-right:1px solid var(--line)}
@@ -150,8 +157,6 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
 .examcard:hover{border-color:var(--ink);transform:translateY(-2px)}
 .examcard .t{font-family:var(--display);font-size:19px;font-weight:600;margin-bottom:6px}
 .examcard .s{color:var(--muted);font-size:13px}
-.switch-exam{display:block;background:none;border:none;color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-decoration:underline;cursor:pointer;padding:0;margin-top:16px;margin-bottom:24px}
-.switch-exam:hover{color:var(--fill)}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 22px;border-radius:2px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:60}
 .toast.show{opacity:1}
 .screen{display:none}
@@ -159,7 +164,7 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
 @keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 @media (max-width:640px){
   h1{font-size:23px}
-  .langtoggle{right:12px;top:12px}
+  .topnav{right:12px;top:12px}
   .langtoggle .knob,.langtoggle button{width:70px}
   .langtoggle[data-lang="en"] .knob{transform:translateX(70px)}
   .toast{bottom:76px}
@@ -193,7 +198,6 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
 
 <section class="screen" id="s-start">
   <div class="wrap">
-    <button class="switch-exam" id="switch-exam"></button>
     <dl class="spec" id="spec"></dl>
     <h2 id="t-h-mode"></h2>
     <div class="modes">
@@ -236,7 +240,6 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
     <div class="grid" id="grid"></div>
     <p class="gridnote" id="gridnote"></p>
     <p style="margin-top:22px"><button class="btn ghost" id="abort"></button></p>
-    <button class="switch-exam" id="switch-exam-2"></button>
   </div>
 </section>
 
@@ -263,17 +266,19 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
       <button class="btn ghost" id="retry"></button>
       <button class="btn ghost" id="home"></button>
     </div>
-    <button class="switch-exam" id="switch-exam-3"></button>
     <footer id="t-footer"></footer>
   </div>
 </section>
 
 <div class="toast" id="toast"></div>
 
-<div class="langtoggle" id="langtoggle" data-lang="en" role="group" aria-label="Language / 表示言語">
-  <span class="knob" aria-hidden="true"></span>
-  <button id="lang-ja" aria-pressed="false">日本語</button>
-  <button id="lang-en" aria-pressed="true">English</button>
+<div class="topnav" id="topnav">
+  <div class="langtoggle" id="langtoggle" data-lang="en" role="group" aria-label="Language / 表示言語">
+    <span class="knob" aria-hidden="true"></span>
+    <button id="lang-ja" aria-pressed="false">日本語</button>
+    <button id="lang-en" aria-pressed="true">English</button>
+  </div>
+  <button class="switch-exam-fixed" id="switch-exam-fixed" hidden></button>
 </div>
 
 <!--
@@ -467,6 +472,11 @@ function labelText(){return setIdx>=0?T().setLabel(setIdx+1):T().randomLabel;}
 function applyStatic(){
   const t=T();
   document.documentElement.lang=t.htmlLang;
+  // Fixed nav button (below the language toggle) back to the certification
+  // picker — shown on every exam screen (start/quiz/result), hidden on the
+  // picker itself since it would just reload the same screen.
+  $("switch-exam-fixed").textContent=t.switchExam;
+  $("switch-exam-fixed").hidden=!EXAM;
   // Before an exam is chosen, the masthead carries the picker's own
   // heading instead of exam-specific title/eyebrow/sub (which don't exist
   // yet — see EXAM_I18N, only built once an exam JSON loads).
@@ -497,7 +507,6 @@ function applyStatic(){
   $("copy").textContent=t.copy;
   $("retry").textContent=t.retry;
   $("home").textContent=t.home;
-  document.querySelectorAll(".switch-exam").forEach(b=>{b.textContent=t.switchExam;});
   $("t-footer").textContent=t.footer;
   renderSets();
 }
@@ -686,9 +695,15 @@ $("submit").onclick=()=>{
   grade();
 };
 function switchExam(){clearInterval(timer);EXAM=null;applyStatic();show("s-select");}
-$("switch-exam").onclick=switchExam;
-$("switch-exam-2").onclick=()=>{if(confirm(T().confirmSwitch))switchExam();};
-$("switch-exam-3").onclick=switchExam;
+$("switch-exam-fixed").onclick=()=>{
+  // Only the quiz screen has in-progress answers to lose; the start and
+  // result screens can switch straight away.
+  if($("s-exam").classList.contains("active")){
+    if(confirm(T().confirmSwitch))switchExam();
+  }else{
+    switchExam();
+  }
+};
 document.addEventListener("keydown",e=>{
   if(!$("s-exam").classList.contains("active"))return;
   if(e.key==="ArrowRight"&&cur<CFG.TOTAL-1){cur++;renderQ();}

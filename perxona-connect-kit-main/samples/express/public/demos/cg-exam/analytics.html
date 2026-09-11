@@ -192,6 +192,50 @@ const I18N = {
 let lang = "ja";
 const t = () => I18N[lang];
 
+// Logged entries carry whatever domain NAME string was on screen at the
+// time (e.g. "映像制作のワークフロー" or "Production workflow") — there's no
+// stable domain id in the log. To show "By domain" and the table's Domain
+// column in the *current* UI language regardless of which language a given
+// question was actually asked in, build a ja<->en name map from every
+// certification's own data file (data/manifest.json + data/<id>.json,
+// same files the exam picker reads) and use it to canonicalize + relabel.
+// Domain names not found in any exam file (e.g. from a retired exam) are
+// left exactly as logged.
+let domainJaToEn = {};
+let domainEnToJa = {};
+const domainMapsReady = (async () => {
+  try {
+    const manifest = await fetch("data/manifest.json").then((r) => r.json());
+    for (const exam of manifest.exams ?? []) {
+      const data = await fetch("data/" + exam.file).then((r) => r.json());
+      const ja = data.domains?.ja ?? [];
+      const en = data.domains?.en ?? [];
+      ja.forEach((j, i) => {
+        const e = en[i];
+        if (j && e) {
+          domainJaToEn[j] = e;
+          domainEnToJa[e] = j;
+        }
+      });
+    }
+  } catch {
+    // Best effort — dashboard still works, just shows raw logged strings.
+  }
+})();
+// Canonicalizes a logged domain string to its ja form (the map's key side),
+// so entries logged in either language merge into one count.
+function canonicalDomain(raw) {
+  if (!raw) return null;
+  if (raw in domainJaToEn) return raw;
+  if (raw in domainEnToJa) return domainEnToJa[raw];
+  return raw; // unmapped — keep as originally logged
+}
+// Renders a canonical (ja-keyed) domain name in the current UI language.
+function displayDomain(canonicalJa) {
+  if (lang === "en" && canonicalJa in domainJaToEn) return domainJaToEn[canonicalJa];
+  return canonicalJa;
+}
+
 const gate = document.getElementById("gate");
 const gatePw = document.getElementById("gate-pw");
 const gateSubmit = document.getElementById("gate-submit");
@@ -292,6 +336,7 @@ async function tryLoad(password) {
       // sessionStorage unavailable — fine, just re-prompt next reload.
     }
     entries = data.entries ?? [];
+    await domainMapsReady;
     gate.hidden = true;
     view.hidden = false;
     render();
@@ -418,7 +463,7 @@ function renderTable() {
       <td>${formatTs(e.ts)}</td>
       <td>${e.kind === "hint" ? `<span class="tag hint">${escapeHtml(s.tagHint)}</span>` : `<span class="tag ask">${escapeHtml(s.tagAsk)}</span>`}</td>
       <td>${e.lang === "en" ? "EN" : "JA"}</td>
-      <td>${escapeHtml(e.domain ?? "—")}</td>
+      <td>${escapeHtml(e.domain ? displayDomain(canonicalDomain(e.domain)) : "—")}</td>
       <td class="q">${escapeHtml(e.question)}</td>
       <td class="r">${escapeHtml(e.reply ?? (e.errorMessage ?? "—"))}</td>
       <td>${e.success ? `<span class="tag ok">${escapeHtml(s.tagOk)}</span>` : `<span class="tag ng">${escapeHtml(s.tagNg)}</span>`}</td>
@@ -441,10 +486,19 @@ function render() {
   document.getElementById("stat-ja").textContent = ja;
   document.getElementById("stat-en").textContent = en;
 
-  const domainCounts = {};
+  // Group by canonical (ja) domain first so the same domain logged in
+  // either language merges into one count, then label each group in the
+  // current UI language for display.
+  const UNCATEGORIZED = "__uncategorized__";
+  const canonicalCounts = {};
   for (const e of entries) {
-    const key = e.domain || t().uncategorized;
-    domainCounts[key] = (domainCounts[key] ?? 0) + 1;
+    const key = e.domain ? canonicalDomain(e.domain) : UNCATEGORIZED;
+    canonicalCounts[key] = (canonicalCounts[key] ?? 0) + 1;
+  }
+  const domainCounts = {};
+  for (const [key, count] of Object.entries(canonicalCounts)) {
+    const label = key === UNCATEGORIZED ? t().uncategorized : displayDomain(key);
+    domainCounts[label] = (domainCounts[label] ?? 0) + count;
   }
   barList(document.getElementById("by-domain"), domainCounts, total);
   renderDays(document.getElementById("by-day"), entries);
