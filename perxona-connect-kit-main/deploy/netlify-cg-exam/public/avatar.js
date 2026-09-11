@@ -110,6 +110,31 @@ let audioEnabled = false;
 let initPromise;
 let currentVoiceId;
 
+// Resolved every time the presenter reaches "Ready" (see markReady() below).
+// waitUntilReady() lets speak() hold off briefly instead of silently
+// dropping audio when it's called just before the avatar's initial load (or
+// a voice/scene reinit) actually finishes — see speak()'s comment for the
+// bug this fixes.
+let readyWaiters = [];
+function markReady() {
+  ready = true;
+  panel.classList.add("ready");
+  setStatus("");
+  applyCameraFraming();
+  readyWaiters.forEach((resolve) => resolve());
+  readyWaiters = [];
+}
+function waitUntilReady(timeoutMs = 8000) {
+  if (ready) return Promise.resolve();
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, timeoutMs);
+    readyWaiters.push(() => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+}
+
 // A voice pinned to one language (e.g. "(Japanese only)") cannot speak the
 // other language natively — it just reads the text with the wrong accent,
 // which is what happened when the exam's language toggle switched to
@@ -221,10 +246,7 @@ async function init() {
 
     presenter.addEventListener("PRESENTER_STATUS", (event) => {
       if (event.detail?.status === "Ready") {
-        ready = true;
-        panel.classList.add("ready");
-        setStatus("");
-        applyCameraFraming();
+        markReady();
       }
     });
     presenter.addEventListener("CONNECT_TOKEN_EXPIRED", async () => {
@@ -344,6 +366,15 @@ function withMotion(text, motionId) {
 
 async function speak(scriptText) {
   say(scriptText);
+  // The avatar's initial load (or a voice/scene reinit) can still be in
+  // flight when this is called — most likely for the "Hint" button, which
+  // becomes clickable the instant a question renders, sooner than any other
+  // avatar-speech trigger gets its first chance to run. Without this wait,
+  // that raced `!ready` here, silently dropping audio while the bubble text
+  // still showed (present() was simply never called). Bounded so a genuine
+  // failure (or mock mode, where the presenter never becomes ready) still
+  // falls back to text-only instead of hanging.
+  await waitUntilReady();
   if (!ready) return;
   await ensureAudio();
   try {
