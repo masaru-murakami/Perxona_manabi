@@ -50,6 +50,7 @@ const statusEl = document.querySelector("#avatar-status");
 const askForm = document.querySelector("#avatar-ask-form");
 const askInput = document.querySelector("#avatar-ask-input");
 const askSubmit = document.querySelector("#avatar-ask-submit");
+const askMic = document.querySelector("#avatar-ask-mic");
 
 let config;
 let motions = [];
@@ -332,6 +333,7 @@ const ASK_TEXT = {
   ja: {
     placeholder: "AIに質問する…",
     submit: "質問する",
+    mic: "音声入力",
     thinking: "考え中…",
     disabled:
       "質問機能を使うにはサーバーの .env に LLM_API_KEY を設定してください。",
@@ -340,6 +342,7 @@ const ASK_TEXT = {
   en: {
     placeholder: "Ask the AI…",
     submit: "Ask",
+    mic: "Voice input",
     thinking: "Thinking…",
     disabled: "Set LLM_API_KEY in the server's .env to enable this.",
     failed: (message) => `Failed to get an answer: ${message}`,
@@ -350,6 +353,67 @@ function applyAskFormLang(lang) {
   const t = ASK_TEXT[lang] ?? ASK_TEXT.ja;
   if (askInput) askInput.placeholder = t.placeholder;
   if (askSubmit) askSubmit.textContent = t.submit;
+  if (askMic) {
+    askMic.setAttribute("aria-label", t.mic);
+    askMic.title = t.mic;
+  }
+}
+
+// ── Voice input for the ask form (Web Speech API) ───────────────────────────
+// Chrome/Edge/Safari only (no Firefox support as of writing) — the mic button
+// stays hidden (see the HTML's `hidden` attribute) unless the API exists, so
+// unsupported browsers just see the normal text form.
+const SpeechRecognitionCtor =
+  window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognition = null;
+let listening = false;
+
+function speechLangFor(lang) {
+  return lang === "ja" ? "ja-JP" : "en-US";
+}
+
+function stopListening() {
+  recognition?.stop();
+}
+
+function startListening() {
+  if (!SpeechRecognitionCtor || listening) return;
+  recognition = new SpeechRecognitionCtor();
+  recognition.lang = speechLangFor(lastLang);
+  recognition.interimResults = true;
+  recognition.maxAlternatives = 1;
+  listening = true;
+  askMic.classList.add("listening");
+  askMic.setAttribute("aria-pressed", "true");
+  recognition.onresult = (event) => {
+    let transcript = "";
+    for (let i = 0; i < event.results.length; i++) {
+      transcript += event.results[i][0].transcript;
+    }
+    askInput.value = transcript;
+  };
+  recognition.onerror = (event) => {
+    // "no-speech" / "aborted" fire on ordinary silence or a manual stop —
+    // not worth surfacing as an error to the user.
+    if (event.error !== "no-speech" && event.error !== "aborted") {
+      console.error("[avatar] speech recognition error", event.error);
+    }
+  };
+  recognition.onend = () => {
+    listening = false;
+    recognition = null;
+    askMic.classList.remove("listening");
+    askMic.setAttribute("aria-pressed", "false");
+    askInput.focus();
+  };
+  try {
+    recognition.start();
+  } catch (error) {
+    console.error("[avatar] speech recognition failed to start", error);
+    listening = false;
+    askMic.classList.remove("listening");
+    askMic.setAttribute("aria-pressed", "false");
+  }
 }
 
 // Keyword lists try emotion-specific names first (in case a richer catalog
@@ -582,17 +646,28 @@ sceneSelect?.addEventListener("change", () => {
 
 askForm?.addEventListener("submit", (event) => {
   event.preventDefault();
+  stopListening();
   const text = askInput?.value ?? "";
   if (!text.trim()) return;
   askInput.value = "";
   askInput.disabled = true;
   askSubmit.disabled = true;
+  if (askMic) askMic.disabled = true;
   askQuestion(text).finally(() => {
     askInput.disabled = false;
     askSubmit.disabled = false;
+    if (askMic) askMic.disabled = false;
     askInput.focus();
   });
 });
+
+if (askMic && SpeechRecognitionCtor) {
+  askMic.hidden = false;
+  askMic.addEventListener("click", () => {
+    if (listening) stopListening();
+    else startListening();
+  });
+}
 
 window.CGExamAvatar = {
   onStart,
