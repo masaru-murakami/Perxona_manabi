@@ -273,6 +273,11 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
     <span id="avatar-accent-label">Japanese accent</span>
   </label>
   <p class="avatar-bubble" id="avatar-bubble" hidden></p>
+  <form class="avatar-ask-form" id="avatar-ask-form">
+    <input type="text" class="avatar-ask-input" id="avatar-ask-input"
+      placeholder="AIに質問する…" maxlength="300" autocomplete="off">
+    <button type="submit" class="avatar-ask-submit" id="avatar-ask-submit">質問する</button>
+  </form>
 </div>
 
 <script>
@@ -498,6 +503,7 @@ function refreshGrid(){
 }
 function renderQ(){
   const t=T(),item=paper[cur];
+  window.CGExamAvatar?.onQuestion(item,lang,t.domains[item.d]);
   $("qno").textContent=t.qno(item.d+1,cur%4+1);
   $("qdomain").textContent=t.domains[item.d];
   $("qtext").textContent=item.q;
