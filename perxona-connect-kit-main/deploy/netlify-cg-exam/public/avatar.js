@@ -158,6 +158,13 @@ let lastLang = "ja";
 // Gives the free-text "ask the AI" form the same grounding the "ask the
 // avatar more" button gets, without avatar.js reaching into quiz internals.
 let currentQuestion = null;
+// A live "Hint" dialogue: null when none is active. Set by hint() after its
+// opening reply, appended to by continueHint() (routed there instead of
+// askQuestion() by the ask-form's submit handler whenever this is non-null),
+// and reset to null by onQuestion() — i.e. it never survives navigating to
+// another question, answering the current one, or a language toggle
+// (onQuestion fires on all three).
+let hintConversation = null;
 const accentToggle = document.querySelector("#avatar-accent-toggle");
 const sceneSelect = document.querySelector("#avatar-scene-select");
 let currentSceneId;
@@ -437,17 +444,25 @@ const HINT_TEXT = {
     disabled:
       "ヒント機能を使うにはサーバーの .env に LLM_API_KEY を設定してください。",
     failed: (message) => `ヒントの取得に失敗しました: ${message}`,
+    replyPlaceholder: "ヒントに返信する…",
   },
   en: {
     thinking: "Thinking of a hint…",
     disabled: "Set LLM_API_KEY in the server's .env to enable hints.",
     failed: (message) => `Failed to get a hint: ${message}`,
+    replyPlaceholder: "Reply to the hint…",
   },
 };
 
+// Labels the ask form's placeholder "ask" vs "reply to the hint" depending
+// on whether a hint dialogue (hintConversation) is currently active, so the
+// same input visibly does double duty instead of silently changing meaning.
 function applyAskFormLang(lang) {
   const t = ASK_TEXT[lang] ?? ASK_TEXT.ja;
-  if (askInput) askInput.placeholder = t.placeholder;
+  const h = HINT_TEXT[lang] ?? HINT_TEXT.ja;
+  if (askInput) {
+    askInput.placeholder = hintConversation ? h.replyPlaceholder : t.placeholder;
+  }
   if (askSubmit) askSubmit.textContent = t.submit;
   if (askMic) {
     askMic.setAttribute("aria-label", t.mic);
@@ -544,6 +559,10 @@ async function onReveal(_item, ok, lang) {
 function onQuestion(item, lang, domainName) {
   currentQuestion = { item, lang, domainName };
   lastLang = lang;
+  // Every render here means a different question, an answer was just
+  // submitted (hiding the Hint button), or a language toggle — none of
+  // which a live hint dialogue should survive.
+  hintConversation = null;
   applyAskFormLang(lang);
 }
 
@@ -681,7 +700,7 @@ async function hint() {
             `分野: ${domainName}`,
             `設問: ${item.q}`,
             `選択肢: ${item.c.join(" / ")}`,
-            "受験者にヒントを与えてください。まず、この設問が何を問うているのか(意図・着眼点)を1〜2文で説明することから始めてください。続けて、考え方のとっかかりになるヒントを1〜2文添えてください。",
+            "受験者にヒントを与えてください。まず、この設問が何を問うているのか(意図・着眼点)を200字程度で説明してください。そのうえで最後に、受験者自身に考えてもらうための問いかけを1つ添え、対話形式で応答を促してください。",
             "重要: 正解の選択肢そのものや、選択肢を絞り込んで答えが一意に決まってしまうような決定的な情報は、絶対に教えないでください。あくまで考える方向性を示すだけにとどめてください。Motion Markupは付けないでください。",
           ]
         : [
@@ -689,7 +708,7 @@ async function hint() {
             `Domain: ${domainName}`,
             `Question: ${item.q}`,
             `Choices: ${item.c.join(" / ")}`,
-            "Give the test-taker a hint. Start by explaining, in 1-2 sentences, what the question is actually asking (its intent/focus). Then add 1-2 sentences pointing them toward how to think about it.",
+            "Give the test-taker a hint. First, in about 200 characters, explain what the question is actually asking (its intent/focus). Then end with one guiding question back to the test-taker, inviting them to reply and continue the conversation.",
             "Important: never reveal the correct choice, and never give away information decisive enough to narrow the choices down to a single answer. Only point at the direction of thinking. Do not add Motion Markup.",
           ]
     ).join("\n");
@@ -699,6 +718,17 @@ async function hint() {
     });
     const motionId = pickMotion(MOTION_KEYWORDS.thinking);
     await speak(withMotion(result.script, motionId));
+    // Opens a hint dialogue: the ask form's submit handler routes to
+    // continueHint() instead of askQuestion() while this is set, letting the
+    // learner reply here to keep talking it through — see onQuestion() for
+    // when this resets.
+    hintConversation = {
+      item,
+      domainName,
+      lang,
+      turns: [{ role: "assistant", text: result.reply }],
+    };
+    applyAskFormLang(lang);
     logQuestion({
       domain: domainName,
       question: item.q,
@@ -712,6 +742,83 @@ async function hint() {
     logQuestion({
       domain: domainName,
       question: item.q,
+      success: false,
+      errorMessage: error.message,
+      kind: "hint",
+    });
+  }
+}
+
+// Continues an open hint dialogue (hintConversation) with the learner's
+// reply, typed into the same ask-form input the free-text "ask" feature
+// uses. Embeds the running transcript in the prompt since /api/demo-script
+// is stateless (no server-side conversation memory).
+async function continueHint(rawText) {
+  const reply = rawText.trim();
+  if (!reply || !hintConversation) return;
+  const { item, domainName, lang } = hintConversation;
+  const t = HINT_TEXT[lang] ?? HINT_TEXT.ja;
+  await ensureVoice(lang);
+  say(t.thinking);
+  if (!config || config.mock || !config.chat) {
+    say(t.disabled);
+    return;
+  }
+  hintConversation.turns.push({ role: "user", text: reply });
+  try {
+    const roleLabel = (role) => {
+      if (lang === "ja") return role === "user" ? "受験者" : "アバター";
+      return role === "user" ? "Test-taker" : "Tutor";
+    };
+    const transcript = hintConversation.turns
+      .map((turn) => `${roleLabel(turn.role)}: ${turn.text}`)
+      .join("\n");
+    const prompt = (
+      lang === "ja"
+        ? [
+            "あなたはCGクリエイター検定の家庭教師アバターです。受験者と、次の設問についてヒント対話を続けています。",
+            `分野: ${domainName}`,
+            `設問: ${item.q}`,
+            `選択肢: ${item.c.join(" / ")}`,
+            "これまでの会話:",
+            transcript,
+            "受験者の直前の発言を踏まえ、対話を続けてください。2〜3文程度の自然な話し言葉で応答し、必要なら次の問いかけを1つ添えてください。",
+            "重要: 正解の選択肢そのものや、選択肢を絞り込んで答えが一意に決まってしまうような決定的な情報は、絶対に教えないでください。Motion Markupは付けないでください。",
+          ]
+        : [
+            "You are a friendly tutor avatar for a CG creator certification exam, continuing a hint dialogue about the following question.",
+            `Domain: ${domainName}`,
+            `Question: ${item.q}`,
+            `Choices: ${item.c.join(" / ")}`,
+            "Conversation so far:",
+            transcript,
+            "Respond to the test-taker's latest message, continuing the dialogue in 2-3 natural spoken sentences. Add one follow-up question if it helps.",
+            "Important: never reveal the correct choice, and never give away information decisive enough to narrow the choices down to a single answer. Do not add Motion Markup.",
+          ]
+    ).join("\n");
+    const result = await requestJson("/api/demo-script", {
+      method: "POST",
+      body: { avatarId: config.defaults.avatarId, prompt },
+    });
+    const motionId = pickMotion(MOTION_KEYWORDS.thinking);
+    await speak(withMotion(result.script, motionId));
+    hintConversation.turns.push({ role: "assistant", text: result.reply });
+    logQuestion({
+      domain: domainName,
+      question: reply,
+      reply: result.reply,
+      success: true,
+      kind: "hint",
+    });
+  } catch (error) {
+    console.error("[avatar] hint reply failed", error);
+    say(t.failed(error.message));
+    // Roll back the user's turn so a retry doesn't duplicate it in the
+    // transcript sent next time.
+    hintConversation.turns.pop();
+    logQuestion({
+      domain: domainName,
+      question: reply,
       success: false,
       errorMessage: error.message,
       kind: "hint",
@@ -843,7 +950,12 @@ askForm?.addEventListener("submit", (event) => {
   askInput.disabled = true;
   askSubmit.disabled = true;
   if (askMic) askMic.disabled = true;
-  askQuestion(text).finally(() => {
+  // While a hint dialogue is open (hintConversation set by hint(), cleared
+  // by onQuestion() — see its comment), this same input's submissions
+  // continue that conversation instead of asking a fresh, unrelated
+  // question.
+  const task = hintConversation ? continueHint(text) : askQuestion(text);
+  task.finally(() => {
     askInput.disabled = false;
     askSubmit.disabled = false;
     if (askMic) askMic.disabled = false;

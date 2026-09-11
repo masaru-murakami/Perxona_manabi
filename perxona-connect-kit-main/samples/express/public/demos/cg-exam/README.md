@@ -24,7 +24,7 @@ This demo composes two independent pieces:
 | "Ask the avatar more" button          | Calls `POST /api/demo-script` for a deeper, avatar-voiced explanation            | Yes       |
 | Result screen                         | Calls `POST /api/demo-script` for a spoken score summary + weak-point analysis   | Yes       |
 | "Ask the AI" free-text form           | Learner types (or speaks) any question; answered in the current UI language, grounded in whatever question is on screen | Yes |
-| "Hint" button (Practice mode, before answering) | Explains what the question is actually asking, then nudges toward how to think about it — the prompt explicitly forbids revealing the correct choice | Yes |
+| "Hint" button (Practice mode, before answering) | Explains what the question is asking (~200 characters) then asks the learner a guiding question, opening a back-and-forth dialogue — replies go through the same "Ask the AI" input, routed to `continueHint()` instead of a fresh question while the dialogue is open (see avatar.js's `hintConversation`). The prompt explicitly forbids revealing the correct choice, in the opening hint and every reply. Ends when the learner moves to another question, answers, or the language toggle switches. | Yes |
 
 Per-answer reactions are deliberately **not** LLM calls — they fire on every one of 40 questions, so
 latency and API cost both need to be zero. The LLM is reserved for the spots (on-demand explanation,
