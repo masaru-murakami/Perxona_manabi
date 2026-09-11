@@ -72,13 +72,45 @@ Open <http://localhost:8083/demos/cg-exam/>.
 
 ```text
 demos/cg-exam/
-├── index.html      — quiz engine (adapted from the standalone mock exam file) + avatar panel markup
+├── index.html      — generic quiz engine + avatar panel markup (no exam content baked in — see
+│                     "Adding another certification" below)
 ├── avatar.js       — Presenter SDK integration (all window.CGExamAvatar.* hooks)
 ├── avatar.css      — floating avatar panel styles, scoped under .avatar-panel
 ├── analytics.html  — password-gated view of logged "Ask the AI" questions (see server.mjs's
 │                     /api/log-question + /api/analytics)
+├── data/
+│   ├── manifest.json         — the exam picker's list: {id, file, title, summary} per exam
+│   └── cg-creator-basic.json — one exam's full data (questions, domains, pass mark, etc.)
 └── README.md       — this file
 ```
+
+## Adding another certification
+
+The quiz engine (`index.html`) has no exam content hard-coded into it — every question, domain
+name, and structural number (pass mark, time limit, set count, questions per domain) comes from a
+JSON file loaded at runtime. The home screen fetches [`data/manifest.json`](data/manifest.json) and
+renders one card per entry; picking a card fetches that entry's `file` and initializes the quiz from
+it (see `loadExam()` / `buildExamI18N()` in `index.html`).
+
+To add a new certification:
+
+1. Create `data/<your-id>.json` shaped like [`data/cg-creator-basic.json`](data/cg-creator-basic.json):
+   `domains` (`{ja:[...], en:[...]}`), `pool` (`{ja:[[...per domain...]], en:[[...]]}` — each pool
+   entry is `{q, c, a, e}`: question text, 4 choices, the correct choice's index, and an
+   explanation), `questionsPerDomain`, `nsets`, `passMark`, `timeLimitMinutes`,
+   `pointsPerQuestion`, plus `eyebrow` / `title` / `sub` / `copyTitle` / `footer` (all
+   `{ja, en}`).
+2. Add an entry to [`data/manifest.json`](data/manifest.json): `{id, file, title: {ja, en},
+   summary: {ja, en}}`.
+3. That's it — no code changes needed. The 4-choice-per-question format is currently assumed
+   (choice-count itself isn't read from the JSON); everything else (domain count, questions per
+   set, pass mark, timer, bank size) is fully data-driven.
+4. Copy both files into `deploy/netlify-cg-exam/public/data/` too before deploying (see that
+   folder's README) — same manual sync as `index.html`/`avatar.js`.
+
+The avatar's tutor-framing prompts (hint, explain, ask, result summary) pick up the chosen exam's
+display name automatically via `onExamLoad()` in `avatar.js` — no per-exam prompt edits needed
+there either.
 
 ## Extending
 

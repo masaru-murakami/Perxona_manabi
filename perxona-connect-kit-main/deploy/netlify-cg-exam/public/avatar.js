@@ -153,6 +153,17 @@ const VOICE_BY_LANG = {
 // default — the toggle in the panel is what turns it on.
 let accentMode = false;
 let lastLang = "ja";
+// Set by onLangChange... no — set by onExamLoad(), called once by
+// index.html's loadExam() when the learner picks a certification (see
+// data/manifest.json). Every LLM prompt below refers to this instead of a
+// hardcoded exam name, so avatar.js works for whichever exam is loaded.
+// Falls back to a generic phrase before any exam has loaded yet.
+let examTitle = { ja: "検定試験", en: "certification exam" };
+function tutorPhrase(lang) {
+  return lang === "ja"
+    ? `あなたは${examTitle.ja}の家庭教師アバターです。`
+    : `You are a friendly tutor avatar for the ${examTitle.en} exam.`;
+}
 // The question currently on screen, kept in sync by index.html's renderQ()
 // calling onQuestion() on every render (question change or lang toggle).
 // Gives the free-text "ask the AI" form the same grounding the "ask the
@@ -595,6 +606,15 @@ function onLangChange(lang) {
   applyAskFormLang(lang);
 }
 
+// Called once by index.html's loadExam() right after a certification is
+// chosen (see data/manifest.json) — title is that manifest entry's
+// {ja, en} display name. Every tutor-framing prompt below reads examTitle
+// instead of naming a specific exam, so this file works unmodified for
+// whichever certification's data the learner loads.
+function onExamLoad(title) {
+  if (title?.ja && title?.en) examTitle = title;
+}
+
 // Free-text "ask the AI" form. Grounds the answer in whatever question is
 // currently on screen (set by onQuestion) but still answers reasonably if
 // the question is unrelated or no question is on screen yet. Always answers
@@ -646,14 +666,14 @@ async function askQuestion(rawText) {
     const prompt = (
       lang === "ja"
         ? [
-            "あなたはCGクリエイター検定の家庭教師アバターです。受験者から次の質問を受け取りました。",
+            tutorPhrase(lang) + "受験者から次の質問を受け取りました。",
             context,
             `受験者からの質問: ${question}`,
-            "上記の設問に関連づけつつ、初学者にも分かるように2〜4文の自然な話し言葉で答えてください。設問とあまり関係のない質問でも、CGクリエイター検定の学習に役立つ範囲で簡潔に答えてください。",
+            `上記の設問に関連づけつつ、初学者にも分かるように2〜4文の自然な話し言葉で答えてください。設問とあまり関係のない質問でも、${examTitle.ja}の学習に役立つ範囲で簡潔に答えてください。`,
             "重要: 受験者の質問がどの言語で書かれていても関係なく、回答は必ず日本語で書いてください。Motion Markupは付けないでください。",
           ]
         : [
-            "You are a friendly tutor avatar for a CG creator certification exam. The test-taker asked you the following question.",
+            tutorPhrase(lang) + " The test-taker asked you the following question.",
             context,
             `Test-taker's question: ${question}`,
             "Answer in 2-4 natural spoken sentences, relating it to the question above when relevant. If it's unrelated, still answer briefly and usefully for exam study.",
@@ -715,7 +735,7 @@ async function hint() {
     const prompt = (
       lang === "ja"
         ? [
-            "あなたはCGクリエイター検定の家庭教師アバターです。受験者はまだこの設問に解答していません。",
+            tutorPhrase(lang) + "受験者はまだこの設問に解答していません。",
             `分野: ${domainName}`,
             `設問: ${item.q}`,
             `選択肢: ${item.c.join(" / ")}`,
@@ -723,7 +743,7 @@ async function hint() {
             "重要: 正解の選択肢そのものや、選択肢を絞り込んで答えが一意に決まってしまうような決定的な情報は、絶対に教えないでください。あくまで考える方向性を示すだけにとどめてください。Motion Markupは付けないでください。",
           ]
         : [
-            "You are a friendly tutor avatar for a CG creator certification exam. The test-taker has not answered this question yet.",
+            tutorPhrase(lang) + " The test-taker has not answered this question yet.",
             `Domain: ${domainName}`,
             `Question: ${item.q}`,
             `Choices: ${item.c.join(" / ")}`,
@@ -795,7 +815,7 @@ async function continueHint(rawText) {
     const prompt = (
       lang === "ja"
         ? [
-            "あなたはCGクリエイター検定の家庭教師アバターです。受験者と、次の設問についてヒント対話を続けています。",
+            tutorPhrase(lang) + "受験者と、次の設問についてヒント対話を続けています。",
             `分野: ${domainName}`,
             `設問: ${item.q}`,
             `選択肢: ${item.c.join(" / ")}`,
@@ -805,7 +825,7 @@ async function continueHint(rawText) {
             "重要: 正解の選択肢そのものや、選択肢を絞り込んで答えが一意に決まってしまうような決定的な情報は、絶対に教えないでください。Motion Markupは付けないでください。",
           ]
         : [
-            "You are a friendly tutor avatar for a CG creator certification exam, continuing a hint dialogue about the following question.",
+            tutorPhrase(lang) + " You're continuing a hint dialogue about the following question.",
             `Domain: ${domainName}`,
             `Question: ${item.q}`,
             `Choices: ${item.c.join(" / ")}`,
@@ -860,7 +880,7 @@ async function explain(item, ok, lang, domainName) {
     const prompt =
       lang === "ja"
         ? [
-            "あなたはCGクリエイター検定の家庭教師アバターです。次の設問について、口頭で少し踏み込んだ解説をしてください。",
+            tutorPhrase(lang) + "次の設問について、口頭で少し踏み込んだ解説をしてください。",
             `分野: ${domainName}`,
             `設問: ${item.q}`,
             `選択肢: ${item.c.join(" / ")}`,
@@ -870,7 +890,7 @@ async function explain(item, ok, lang, domainName) {
             "この簡易解説をふまえ、初学者にも分かるように2〜3文で自然な話し言葉で補足してください。Motion Markupは付けないでください。",
           ].join("\n")
         : [
-            "You are a friendly tutor avatar for a CG creator certification exam. Give a short spoken follow-up explanation.",
+            tutorPhrase(lang) + " Give a short spoken follow-up explanation.",
             `Domain: ${domainName}`,
             `Question: ${item.q}`,
             `Choices: ${item.c.join(" / ")}`,
@@ -913,14 +933,14 @@ async function onResult(result, domains, lang) {
     const prompt =
       lang === "ja"
         ? [
-            "あなたはCGクリエイター検定の家庭教師アバターです。模擬試験の結果を見て、口頭で励ましと弱点分析を伝えてください。",
+            tutorPhrase(lang) + "模擬試験の結果を見て、口頭で励ましと弱点分析を伝えてください。",
             `総合得点: ${result.score}点 / 100点（合格ライン70点）`,
             `正答数: ${result.correct} / 40問`,
             `分野別正答数（4問中）: ${breakdown}`,
             "4問中2問以下の分野があれば重点的に指摘し、優しく励ましながら次にやるべきことを一言添えてください。3〜5文の自然な話し言葉で。Motion Markupは付けないでください。",
           ].join("\n")
         : [
-            "You are a friendly tutor avatar for a CG creator certification exam. Review this mock exam result with spoken encouragement and weak-point analysis.",
+            tutorPhrase(lang) + " Review this mock exam result with spoken encouragement and weak-point analysis.",
             `Overall score: ${result.score} / 100 (pass mark 70)`,
             `Correct: ${result.correct} / 40`,
             `Per-domain correct (out of 4): ${breakdown}`,
@@ -997,6 +1017,7 @@ window.CGExamAvatar = {
   onResult,
   onQuestion,
   onLangChange,
+  onExamLoad,
   hint,
 };
 init();

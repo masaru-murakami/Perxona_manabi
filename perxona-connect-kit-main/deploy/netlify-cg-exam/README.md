@@ -8,7 +8,10 @@ always-on Node process and aren't a fit for Netlify's static+functions model wit
 
 `public/index.html` / `avatar.js` / `avatar.css` are plain copies of the demo's files — they already
 call relative paths like `/api/config`, so nothing needed to change to point them at Netlify
-Functions instead of the Express server.
+Functions instead of the Express server. `public/data/` (`manifest.json` + one JSON file per
+certification) is likewise a plain copy of [`../../samples/express/public/demos/cg-exam/data/`](../../samples/express/public/demos/cg-exam/data/)
+— the exam picker on the home screen fetches these at runtime, so this folder needs the same
+manual sync as the other three files whenever a certification's data changes or a new one is added.
 
 ## 1. Create the site (GitHub-connected)
 

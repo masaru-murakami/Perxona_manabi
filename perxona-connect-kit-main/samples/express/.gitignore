@@ -8,4 +8,6 @@ tests/benchmark/manual.config.mjs
 
 # Local analytics log for the cg-exam ask-question form (see server.mjs's
 # /api/log-question / /api/analytics) — learner question data, never commit it.
-data/
+# Anchored to this directory only — public/demos/cg-exam/data/ is the exam
+# content JSON (manifest.json + per-exam files) and must stay tracked.
+/data/

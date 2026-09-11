@@ -1,0 +1,16 @@
+{
+  "exams": [
+    {
+      "id": "cg-creator-basic",
+      "file": "cg-creator-basic.json",
+      "title": {
+        "ja": "CGクリエイター検定 ベーシック",
+        "en": "CG Creator Certification, Basic"
+      },
+      "summary": {
+        "ja": "模擬試験 全20回・問題バンク300問",
+        "en": "20 mock exams · 300-question bank"
+      }
+    }
+  ]
+}
