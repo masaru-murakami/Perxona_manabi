@@ -141,6 +141,8 @@ h2{font-family:var(--display);font-size:19px;font-weight:600;margin:0 0 14px;let
 .hint{background:#FBF6EE;border:1px solid #E3D3B6;padding:16px 18px;font-size:13.5px;margin-bottom:30px;line-height:1.7}
 .hint b{display:block;margin-bottom:4px}
 footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:var(--muted);font-size:12px}
+.admin-link{color:var(--muted);text-decoration:none;font-family:var(--mono)}
+.admin-link:hover{color:var(--fill);text-decoration:underline}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 22px;border-radius:2px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:60}
 .toast.show{opacity:1}
 .screen{display:none}
@@ -188,6 +190,7 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
     <button class="randombtn" id="rand"><b id="t-rand-b"></b><span id="t-rand-s"></span></button>
     <div class="hint" id="hint1"></div>
     <div class="hint" id="hint2"></div>
+    <footer><a class="admin-link" href="analytics.html">質問ログ分析(運営者用)</a></footer>
   </div>
 </section>
 
