@@ -440,13 +440,15 @@ async function askQuestion(rawText) {
             "あなたはCGクリエイター検定の家庭教師アバターです。受験者から次の質問を受け取りました。",
             context,
             `受験者からの質問: ${question}`,
-            "上記の設問に関連づけつつ、初学者にも分かるように2〜4文の自然な話し言葉で答えてください。設問とあまり関係のない質問でも、CGクリエイター検定の学習に役立つ範囲で簡潔に答えてください。Motion Markupは付けないでください。",
+            "上記の設問に関連づけつつ、初学者にも分かるように2〜4文の自然な話し言葉で答えてください。設問とあまり関係のない質問でも、CGクリエイター検定の学習に役立つ範囲で簡潔に答えてください。",
+            "重要: 受験者の質問がどの言語で書かれていても関係なく、回答は必ず日本語で書いてください。Motion Markupは付けないでください。",
           ]
         : [
             "You are a friendly tutor avatar for a CG creator certification exam. The test-taker asked you the following question.",
             context,
             `Test-taker's question: ${question}`,
-            "Answer in 2-4 natural spoken sentences, relating it to the question above when relevant. If it's unrelated, still answer briefly and usefully for exam study. Do not add Motion Markup.",
+            "Answer in 2-4 natural spoken sentences, relating it to the question above when relevant. If it's unrelated, still answer briefly and usefully for exam study.",
+            "Important: always answer in English, regardless of what language the test-taker's question is written in. Do not add Motion Markup.",
           ]
     )
       .filter(Boolean)
