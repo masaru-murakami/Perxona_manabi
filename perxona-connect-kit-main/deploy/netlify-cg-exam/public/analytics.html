@@ -27,6 +27,8 @@ h2{font-family:var(--display);font-size:16px;font-weight:600;margin:0 0 12px}
 .btn.ghost{background:transparent;color:var(--ink)}
 .err{color:var(--ng);font-size:12.5px;margin-top:8px}
 .hint{color:var(--muted);font-size:12.5px;margin-top:8px}
+.back-link{color:var(--muted);text-decoration:none;font-family:var(--mono);font-size:12px;letter-spacing:.04em}
+.back-link:hover{color:var(--fill);text-decoration:underline}
 [hidden]{display:none!important}
 
 .langtoggle{position:fixed;right:18px;top:18px;z-index:50;display:flex;align-items:center;
@@ -88,6 +90,7 @@ td.q, td.r{max-width:280px}
   <div class="eyebrow">CG-ARTS EXAM PREP / INTERNAL</div>
   <h1 id="t-h1"></h1>
   <p class="sub" id="t-sub"></p>
+  <p><a class="back-link" id="back-link" href="./" target="_blank" rel="noopener"></a></p>
 
   <div class="gate card" id="gate">
     <h2 id="t-gate-h2"></h2>
@@ -148,6 +151,7 @@ const I18N = {
     docTitle: "質問ログ分析 — CG検定模擬試験",
     h1: "質問ログ分析",
     sub: "「AIに質問する」フォームに学習者が送った質問を集計・一覧します。",
+    backLink: "検定選択ページを開く（別タブ）",
     gateH2: "パスワード",
     gateSubmit: "見る",
     gateErrWrong: "パスワードが違います。",
@@ -170,6 +174,7 @@ const I18N = {
     docTitle: "Question Log Analytics — CG Exam Mock Tests",
     h1: "Question Log Analytics",
     sub: 'Aggregates and lists the questions learners sent through the "Ask the AI" form.',
+    backLink: "Open the certification picker (new tab)",
     gateH2: "Password",
     gateSubmit: "View",
     gateErrWrong: "Incorrect password.",
@@ -260,6 +265,7 @@ function applyStatic() {
   document.title = s.docTitle;
   document.getElementById("t-h1").textContent = s.h1;
   document.getElementById("t-sub").textContent = s.sub;
+  document.getElementById("back-link").textContent = s.backLink;
   document.getElementById("t-gate-h2").textContent = s.gateH2;
   gateSubmit.textContent = s.gateSubmit;
   document.getElementById("t-stat-total").textContent = s.statTotal;

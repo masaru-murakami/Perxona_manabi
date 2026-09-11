@@ -143,7 +143,7 @@ function waitUntilReady(timeoutMs = 8000) {
 // right one on demand (cheap: same avatar/scene, so assets are already
 // cached — only the voice/TTS config actually changes).
 const VOICE_BY_LANG = {
-  ja: "01KT9NE031K3MWGCXMYZ078TKD", // Female - cheerful and clear (Japanese only)
+  ja: "01KTBJEV9G9GHFFF35F9QPKJ5D", // Female - cute and fast (For Japanese) — younger-sounding
   en: "01KTBJGRFKWS029KQKQBC3318V", // Female - cute and fast (For English) — younger-sounding
 };
 
@@ -706,6 +706,56 @@ async function askQuestion(rawText) {
   }
 }
 
+// "Explain" button next to each card on the certification-picker screen
+// (index.html's renderExamGrid()). Runs before any exam is loaded — EXAM,
+// examTitle, currentQuestion are all still unset — so it builds its own
+// prompt straight from the manifest entry (title/summary) instead of
+// depending on tutorPhrase()'s examTitle or any question context.
+async function explainCertification(item, lang) {
+  lastLang = lang;
+  const t = ASK_TEXT[lang] ?? ASK_TEXT.ja;
+  const title = item?.title?.[lang] ?? item?.title?.ja ?? "";
+  const summary = item?.summary?.[lang] ?? item?.summary?.ja ?? "";
+  const logQ = lang === "ja" ? `${title}の解説` : `Explain ${title}`;
+  await ensureVoice(lang);
+  say(t.thinking);
+  if (!config || config.mock || !config.chat) {
+    say(t.disabled);
+    logQuestion({ domain: title, question: logQ, success: false, errorMessage: "chat_disabled" });
+    return;
+  }
+  try {
+    const prompt = (
+      lang === "ja"
+        ? [
+            "あなたは親しみやすい資格検定の案内役アバターです。",
+            "次の検定について、受験を検討している学習者向けに日本語で400字程度で紹介してください。",
+            `検定名: ${title}`,
+            `概要: ${summary}`,
+            "何を学ぶ検定か、どんな人におすすめかが伝わるように、自然な話し言葉でまとめてください。Motion Markupは付けないでください。",
+          ]
+        : [
+            "You are a friendly certification-exam guide avatar.",
+            "Introduce the following certification to a learner considering taking it, in natural spoken English, about 60-70 words (roughly matching a 400-character Japanese explanation).",
+            `Certification: ${title}`,
+            `Summary: ${summary}`,
+            "Convey what it covers and who it's a good fit for. Do not add Motion Markup.",
+          ]
+    ).join("\n");
+    const result = await requestJson("/api/demo-script", {
+      method: "POST",
+      body: { avatarId: config.defaults.avatarId, prompt },
+    });
+    const motionId = pickMotion(MOTION_KEYWORDS.thinking);
+    await speak(withMotion(result.script, motionId));
+    logQuestion({ domain: title, question: logQ, reply: result.reply, success: true });
+  } catch (error) {
+    console.error("[avatar] explainCertification failed", error);
+    say(t.failed(error.message));
+    logQuestion({ domain: title, question: logQ, success: false, errorMessage: error.message });
+  }
+}
+
 // "Hint" button — only shown by index.html in Practice mode before the
 // learner answers (see renderQ()'s #hint-row toggle). Always uses
 // currentQuestion (set by onQuestion on the same render that shows the
@@ -1019,5 +1069,6 @@ window.CGExamAvatar = {
   onLangChange,
   onExamLoad,
   hint,
+  explainCertification,
 };
 init();
