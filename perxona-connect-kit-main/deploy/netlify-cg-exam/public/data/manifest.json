@@ -11,6 +11,18 @@
         "ja": "模擬試験 全20回・問題バンク300問",
         "en": "20 mock exams · 300-question bank"
       }
+    },
+    {
+      "id": "world-heritage-2kyu",
+      "file": "world-heritage-2kyu.json",
+      "title": {
+        "ja": "世界遺産検定 2級",
+        "en": "World Heritage Study Certification, Level 2"
+      },
+      "summary": {
+        "ja": "練習セット 全8回・オリジナル問題バンク150問",
+        "en": "8 practice sets · 150-question original bank"
+      }
     }
   ]
 }
