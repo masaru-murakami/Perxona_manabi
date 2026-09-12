@@ -25,18 +25,6 @@
       }
     },
     {
-      "id": "world-heritage-2kyu",
-      "file": "world-heritage-2kyu.json",
-      "title": {
-        "ja": "世界遺産検定 2級",
-        "en": "World Heritage Study Certification, Level 2"
-      },
-      "summary": {
-        "ja": "練習セット 全8回・オリジナル問題バンク150問",
-        "en": "8 practice sets · 150-question original bank"
-      }
-    },
-    {
       "id": "it-passport",
       "file": "it-passport.json",
       "title": {
@@ -46,6 +34,18 @@
       "summary": {
         "ja": "模擬試験 全10回・IPA公表の過去問418問(日本語のみ)",
         "en": "10 mock exams · 418 official past questions (Japanese only)"
+      }
+    },
+    {
+      "id": "world-heritage-2kyu",
+      "file": "world-heritage-2kyu.json",
+      "title": {
+        "ja": "世界遺産検定 2級",
+        "en": "World Heritage Study Certification, Level 2"
+      },
+      "summary": {
+        "ja": "練習セット 全8回・オリジナル問題バンク150問",
+        "en": "8 practice sets · 150-question original bank"
       }
     }
   ]
