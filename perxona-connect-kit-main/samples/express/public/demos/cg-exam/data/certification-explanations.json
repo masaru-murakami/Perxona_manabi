@@ -1,0 +1,15 @@
+{
+  "_comment": "Spoken 'Explain' scripts for the certification-picker screen's per-exam Explain button (avatar.js explainCertification()). Written once, offline, in the avatar's companion persona — read back verbatim at runtime instead of calling the LLM on every click. Regenerate by hand (matching the length/tone of the existing entries: ~400 JA characters, ~60-70 EN words, no Motion Markup) whenever an exam's title/summary/domains change meaningfully, and add a new entry here for any exam added to data/manifest.json.",
+  "cg-creator-basic": {
+    "ja": "CGクリエイター検定ベーシックは、映像制作のワークフローから、デザイン・色彩の基礎、撮影・構図、モデリング、マテリアル・テクスチャ、ライティング、アニメーション、レンダリング、合成・映像編集、そして知的財産権まで、CG制作の土台を幅広く問う検定だよ。これからCGや映像、ゲームの仕事を目指す人や、専門学校・大学で学び始めたばかりの人にぴったり。模擬試験は全20回、300問の問題バンクから出題されるから、繰り返し解くほど知識が定着していくよ。わたしも一緒に付き合うから、焦らずコツコツ挑戦してみよう。",
+    "en": "CG Creator Certification, Basic covers CG production's foundations: workflow, design and color basics, camera and composition, modeling, materials and texturing, lighting, animation, rendering, compositing, and intellectual property. It's perfect if you're just starting out in CG, games, or film. With 20 mock exams from a 300-question bank, you'll build a solid foundation one set at a time. Let's tackle it together!"
+  },
+  "cg-creator-expert": {
+    "ja": "CGクリエイター検定エキスパートは、ベーシックより一歩踏み込んだ内容で、CG制作の基礎とデザイン、色彩と構図、2次元CG、3次元CGのモデリング、質感設定とマッピング、ライティングとカメラ、レンダリング、アニメーション、映像合成と編集、そして映像表現と知的財産まで、実務に近いレベルで幅広く問われる検定だよ。すでに基礎を学び終えた人や、現場で通用する知識を確認したい人に向いている。模擬試験は全10回、150問のオリジナル問題バンクから出題されるよ。ベーシックで自信がついた人は、次のステップとしてぜひ挑戦してみてね。",
+    "en": "CG Creator Certification, Expert goes further than Basic — production fundamentals and design, color and composition, 2D CG, 3D modeling, texturing and mapping, lighting and camera, rendering, animation, compositing, and visual expression and IP, all at a level closer to real production work. It's the natural next step once you've mastered the basics. With 10 mock exams from a 150-question original bank, let's aim higher together!"
+  },
+  "world-heritage-2kyu": {
+    "ja": "世界遺産検定2級は、世界遺産の基礎知識から、日本の文化遺産・自然遺産、ヨーロッパやアジア、中東・アフリカ、南北アメリカ・オセアニアの文化遺産、世界の自然遺産、複合遺産や文化的景観、そして危機遺産や世界遺産条約まで、世界中の遺産について幅広く問う検定だよ。旅行や歴史、文化に興味がある人はもちろん、世界遺産の知識を体系的に身につけたい人にぴったり。練習セットは全8回、150問のオリジナル問題バンクから出題されるから、地域ごとにじっくり学んでいけるよ。世界中を旅する気分で、一緒に楽しく挑戦してみよう。",
+    "en": "World Heritage Study Certification, Level 2 covers the basics, Japan's cultural and natural heritage, and cultural heritage across Europe, Asia, the Middle East, Africa, the Americas, and Oceania — plus natural heritage, mixed sites, and endangered heritage under the World Heritage Convention. Perfect if you love travel, history, or culture. With 8 practice sets from a 150-question bank, let's explore the world together, one region at a time!"
+  }
+}

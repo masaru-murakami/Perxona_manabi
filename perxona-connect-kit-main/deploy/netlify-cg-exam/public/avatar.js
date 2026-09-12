@@ -724,54 +724,44 @@ async function askQuestion(rawText) {
   }
 }
 
+// Pre-written (not LLM-generated per click) scripts for the "Explain"
+// button, keyed by manifest exam id then UI language — see
+// data/certification-explanations.json's own _comment for how to update
+// them. Fetched once and cached; a second click on any card reuses it.
+let certExplanations = null;
+function loadCertExplanations() {
+  if (!certExplanations) {
+    certExplanations = requestJson("data/certification-explanations.json").catch((error) => {
+      console.error("[avatar] failed to load certification-explanations.json", error);
+      certExplanations = null; // let the next call retry instead of caching a failure
+      return {};
+    });
+  }
+  return certExplanations;
+}
+
 // "Explain" button next to each card on the certification-picker screen
 // (index.html's renderExamGrid()). Runs before any exam is loaded — EXAM,
-// examTitle, currentQuestion are all still unset — so it builds its own
-// prompt straight from the manifest entry (title/summary) instead of
-// depending on tutorPhrase()'s examTitle or any question context.
+// examTitle, currentQuestion are all still unset — so it looks the script up
+// by the manifest entry's own id instead of depending on tutorPhrase()'s
+// examTitle or any question context. No LLM call: the script was written
+// once, offline, and just gets read back here (see loadCertExplanations()).
 async function explainCertification(item, lang) {
   lastLang = lang;
   const t = ASK_TEXT[lang] ?? ASK_TEXT.ja;
   const title = item?.title?.[lang] ?? item?.title?.ja ?? "";
-  const summary = item?.summary?.[lang] ?? item?.summary?.ja ?? "";
   const logQ = lang === "ja" ? `${title}の解説` : `Explain ${title}`;
   await ensureVoice(lang);
-  say(t.thinking);
-  if (!config || config.mock || !config.chat) {
-    say(t.disabled);
-    logQuestion({ domain: title, question: logQ, success: false, errorMessage: "chat_disabled" });
+  const explanations = await loadCertExplanations();
+  const text = explanations?.[item?.id]?.[lang] ?? explanations?.[item?.id]?.ja;
+  if (!text) {
+    say(t.failed("script not found"));
+    logQuestion({ domain: title, question: logQ, success: false, errorMessage: "script_not_found" });
     return;
   }
-  try {
-    const prompt = (
-      lang === "ja"
-        ? [
-            "あなたは学習者の隣で一緒に頑張る、応援アバターです。先生や家庭教師ではなく友達のような立場で話してください。",
-            "次の検定について、受験を検討している学習者向けに日本語で400字程度で紹介してください。",
-            `検定名: ${title}`,
-            `概要: ${summary}`,
-            "何を学ぶ検定か、どんな人におすすめかが伝わるように、自然な話し言葉でまとめてください。Motion Markupは付けないでください。",
-          ]
-        : [
-            "You are a cheerful companion avatar who studies alongside learners — not a teacher or tutor, but a friend rooting for them.",
-            "Introduce the following certification to a learner considering taking it, in natural spoken English, about 60-70 words (roughly matching a 400-character Japanese explanation).",
-            `Certification: ${title}`,
-            `Summary: ${summary}`,
-            "Convey what it covers and who it's a good fit for. Do not add Motion Markup.",
-          ]
-    ).join("\n");
-    const result = await requestJson("/api/demo-script", {
-      method: "POST",
-      body: { avatarId: config.defaults.avatarId, prompt },
-    });
-    const motionId = pickMotion(MOTION_KEYWORDS.thinking);
-    await speak(withMotion(result.script, motionId));
-    logQuestion({ domain: title, question: logQ, reply: result.reply, success: true });
-  } catch (error) {
-    console.error("[avatar] explainCertification failed", error);
-    say(t.failed(error.message));
-    logQuestion({ domain: title, question: logQ, success: false, errorMessage: error.message });
-  }
+  const motionId = pickMotion(MOTION_KEYWORDS.thinking);
+  await speak(withMotion(text, motionId));
+  logQuestion({ domain: title, question: logQ, reply: text, success: true });
 }
 
 // Increments and returns this browser's local "visit count" — purely a
