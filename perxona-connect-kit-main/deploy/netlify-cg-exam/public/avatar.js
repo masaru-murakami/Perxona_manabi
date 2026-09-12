@@ -161,11 +161,6 @@ const VOICE_BY_LANG = {
   en: "01KTBJGRFKWS029KQKQBC3318V", // Female - cute and fast (For English) — younger-sounding
 };
 
-// "Japanese accent" mode is the fun opposite of the fix above: it forces the
-// Japanese-only voice on regardless of UI language, so English lines get
-// read back in a Japanese accent (Japanese lines just sound normal). Off by
-// default — the toggle in the panel is what turns it on.
-let accentMode = false;
 let lastLang = "ja";
 // Set by onLangChange... no — set by onExamLoad(), called once by
 // index.html's loadExam() when the learner picks a certification (see
@@ -196,12 +191,10 @@ let currentQuestion = null;
 // another question, answering the current one, or a language toggle
 // (onQuestion fires on all three).
 let hintConversation = null;
-const accentToggle = document.querySelector("#avatar-accent-toggle");
 const sceneSelect = document.querySelector("#avatar-scene-select");
 let currentSceneId;
 
 function voiceForLang(lang) {
-  if (accentMode) return VOICE_BY_LANG.ja;
   return VOICE_BY_LANG[lang] ?? VOICE_BY_LANG.ja;
 }
 
@@ -340,7 +333,7 @@ async function init() {
   return initPromise;
 }
 
-// Voice switch (language toggle / accent mode) and scene switch (the panel's
+// Voice switch (language toggle) and scene switch (the panel's
 // <select>) both call presenter.initialize() to swap one part of the target.
 // Both can fire around the same time — e.g. on page load, a browser can
 // restore an already-answered question (firing onReveal → ensureVoice) and a
@@ -1150,17 +1143,6 @@ async function onResult(result, domains, lang) {
     );
   }
 }
-
-const ACCENT_DEMO_LINE = {
-  ja: "こんな感じでどうかな?",
-  en: "How does this sound now?",
-};
-
-accentToggle?.addEventListener("change", async () => {
-  accentMode = accentToggle.checked;
-  await ensureVoice(lastLang);
-  await speak(ACCENT_DEMO_LINE[lastLang] ?? ACCENT_DEMO_LINE.ja);
-});
 
 sceneSelect?.addEventListener("change", () => {
   switchScene(sceneSelect.value);

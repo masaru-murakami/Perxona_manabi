@@ -63,25 +63,6 @@
   color: #444b5c;
 }
 
-.avatar-accent {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 8px 0 0;
-  padding: 6px 8px;
-  background: #ffffff;
-  border: 1px solid #c9ceda;
-  border-radius: 8px;
-  font-size: 11px;
-  color: #444b5c;
-  cursor: pointer;
-  user-select: none;
-}
-
-.avatar-accent input {
-  margin: 0;
-}
-
 .avatar-bubble {
   margin: 8px 0 0;
   padding: 10px 12px;
@@ -172,11 +153,12 @@
    short viewport — it either overlaps quiz content or gets squeezed
    illegibly. Below 640px the avatar becomes a full-width bar pinned to the
    window's bottom edge, always painted above the page (z-index above
-   .wrap's 41 — see index.html), avatar block on the left and everything
-   else ("communication": scene/accent/bubble/ask-form, wrapped in
-   .avatar-comm) on the right. The comm column scrolls internally so the
-   bar never exceeds --avatar-bar-max-h; index.html pads .wrap's bottom by
-   that same amount so page content and the toast never sit under it. */
+   .wrap's 41 — see index.html): the avatar block (.avatar-visual — the
+   presenter plus its scene picker, stacked) on the left, and everything the
+   learner reads/types ("communication": bubble/ask-form, .avatar-comm) on
+   the right. The comm column scrolls internally so the bar never exceeds
+   --avatar-bar-max-h; index.html pads .wrap's bottom by that same amount so
+   page content and the toast never sit under it. */
 @media (max-width: 640px) {
   .avatar-panel {
     --avatar-bar-max-h: 280px;
@@ -194,10 +176,17 @@
     background: rgba(17, 19, 26, 0.96);
     box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.3);
   }
+  .avatar-visual {
+    flex: 0 0 88px;
+    width: 88px;
+  }
   .avatar-stage {
-    flex: 0 0 84px;
-    width: 84px;
-    height: 84px;
+    width: 88px;
+    height: 88px;
+  }
+  .avatar-scene-select {
+    font-size: 10px;
+    padding: 4px 6px;
   }
   .avatar-comm {
     flex: 1;
