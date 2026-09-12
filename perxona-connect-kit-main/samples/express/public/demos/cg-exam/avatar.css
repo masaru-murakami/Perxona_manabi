@@ -75,6 +75,10 @@
   max-height: 180px;
   overflow-y: auto;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14);
+  /* say()/formatQA() put a blank line between the learner's own question
+     and the avatar's reply — preserve it instead of collapsing to a space
+     like a plain <p> normally would. */
+  white-space: pre-line;
 }
 
 .avatar-ask-form {

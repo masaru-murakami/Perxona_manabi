@@ -417,8 +417,12 @@ function withMotion(text, motionId) {
   return motionId ? `[MOTION ${motionId}:1] ${text}` : text;
 }
 
-async function speak(scriptText) {
-  say(scriptText);
+// `displayText` lets a caller show something in the bubble other than what
+// gets spoken — e.g. the learner's own question plus the reply, while only
+// the reply itself is synthesized as audio (see formatQA()/acknowledge()
+// below). Defaults to scriptText so every existing call site is unaffected.
+async function speak(scriptText, displayText) {
+  say(displayText ?? scriptText);
   // The avatar's initial load (or a voice/scene reinit) can still be in
   // flight when this is called — most likely for the "Hint" button, which
   // becomes clickable the instant a question renders, sooner than any other
@@ -435,6 +439,31 @@ async function speak(scriptText) {
   } catch (error) {
     console.error("[avatar] present failed", error);
   }
+}
+
+// Short canned lines the avatar says the instant a question/hint request
+// goes out — before the LLM call (a few seconds over the network) resolves.
+// A silent "thinking…" bubble reads as unresponsive; this gives immediate
+// audible + visual feedback instead. The real reply's speak() call
+// interrupts this line (see stopSpeaking() in say()) once it's ready.
+const ACK_LINES = {
+  ja: ["OK、調べてみるね。", "うんうん、ちょっと待ってね。", "了解、考えてみるよ。", "オッケー、確認するね。"],
+  en: ["OK, let me look into that.", "Got it, one moment.", "Sure, let me think about that.", "Alright, checking now."],
+};
+
+// Prefixes `answer` with the learner's own submitted text (when there is
+// one — hint()'s opening turn and explain() are button-triggered, with
+// nothing typed to show) so it stays visible once the real reply replaces
+// the acknowledgment line above it.
+function formatQA(lang, question, answer) {
+  if (!question) return answer;
+  const label = lang === "ja" ? "質問" : "Q";
+  return `${label}: ${question}\n\n${answer}`;
+}
+
+function acknowledge(lang, displayText) {
+  const motionId = pickMotion(MOTION_KEYWORDS.thinking);
+  return speak(withMotion(pick(ACK_LINES[lang] ?? ACK_LINES.ja), motionId), displayText);
 }
 
 const GREETINGS = {
@@ -653,9 +682,8 @@ async function askQuestion(rawText) {
   );
   const questionDomain = hasFreshContext ? currentQuestion.domainName : null;
   await ensureVoice(lang);
-  say(t.thinking);
   if (!config || config.mock || !config.chat) {
-    say(t.disabled);
+    say(formatQA(lang, question, t.disabled));
     logQuestion({
       domain: questionDomain,
       question,
@@ -664,6 +692,7 @@ async function askQuestion(rawText) {
     });
     return;
   }
+  await acknowledge(lang, formatQA(lang, question, t.thinking));
   try {
     const context = hasFreshContext
       ? (lang === "ja"
@@ -705,7 +734,7 @@ async function askQuestion(rawText) {
       body: { avatarId: config.defaults.avatarId, prompt },
     });
     const motionId = pickMotion(MOTION_KEYWORDS.thinking);
-    await speak(withMotion(result.script, motionId));
+    await speak(withMotion(result.script, motionId), formatQA(lang, question, result.reply));
     logQuestion({
       domain: questionDomain,
       question,
@@ -714,7 +743,7 @@ async function askQuestion(rawText) {
     });
   } catch (error) {
     console.error("[avatar] ask failed", error);
-    say(t.failed(error.message));
+    say(formatQA(lang, question, t.failed(error.message)));
     logQuestion({
       domain: questionDomain,
       question,
@@ -827,7 +856,6 @@ async function greetUser(name, lang) {
   const t = ASK_TEXT[lang] ?? ASK_TEXT.ja;
   const trimmedName = (name ?? "").trim();
   await ensureVoice(lang);
-  say(t.thinking);
   const fallbackGreeting = async () => {
     const motionId = pickMotion(MOTION_KEYWORDS.greeting);
     await speak(withMotion(pick(GREETINGS[lang] ?? GREETINGS.ja), motionId));
@@ -836,6 +864,7 @@ async function greetUser(name, lang) {
     await fallbackGreeting();
     return { usageCount, questionCount, rank };
   }
+  await acknowledge(lang, t.thinking);
   try {
     const prompt = (
       lang === "ja"
@@ -888,7 +917,6 @@ async function hint() {
   const lang = lastLang;
   const t = HINT_TEXT[lang] ?? HINT_TEXT.ja;
   await ensureVoice(lang);
-  say(t.thinking);
   if (!config || config.mock || !config.chat) {
     say(t.disabled);
     logQuestion({
@@ -900,6 +928,7 @@ async function hint() {
     });
     return;
   }
+  await acknowledge(lang, t.thinking);
   try {
     const prompt = (
       lang === "ja"
@@ -967,11 +996,11 @@ async function continueHint(rawText) {
   const { item, domainName, lang } = hintConversation;
   const t = HINT_TEXT[lang] ?? HINT_TEXT.ja;
   await ensureVoice(lang);
-  say(t.thinking);
   if (!config || config.mock || !config.chat) {
-    say(t.disabled);
+    say(formatQA(lang, reply, t.disabled));
     return;
   }
+  await acknowledge(lang, formatQA(lang, reply, t.thinking));
   hintConversation.turns.push({ role: "user", text: reply });
   try {
     const roleLabel = (role) => {
@@ -1009,7 +1038,7 @@ async function continueHint(rawText) {
       body: { avatarId: config.defaults.avatarId, prompt },
     });
     const motionId = pickMotion(MOTION_KEYWORDS.thinking);
-    await speak(withMotion(result.script, motionId));
+    await speak(withMotion(result.script, motionId), formatQA(lang, reply, result.reply));
     hintConversation.turns.push({ role: "assistant", text: result.reply });
     logQuestion({
       domain: domainName,
@@ -1020,7 +1049,7 @@ async function continueHint(rawText) {
     });
   } catch (error) {
     console.error("[avatar] hint reply failed", error);
-    say(t.failed(error.message));
+    say(formatQA(lang, reply, t.failed(error.message)));
     // Roll back the user's turn so a retry doesn't duplicate it in the
     // transcript sent next time.
     hintConversation.turns.pop();
@@ -1036,7 +1065,6 @@ async function continueHint(rawText) {
 
 async function explain(item, ok, lang, domainName) {
   await ensureVoice(lang);
-  say(lang === "ja" ? "考え中…" : "Thinking…");
   if (!config || config.mock || !config.chat) {
     say(
       lang === "ja"
@@ -1045,6 +1073,7 @@ async function explain(item, ok, lang, domainName) {
     );
     return;
   }
+  await acknowledge(lang, lang === "ja" ? "考え中…" : "Thinking…");
   try {
     const prompt =
       lang === "ja"
@@ -1086,7 +1115,6 @@ async function explain(item, ok, lang, domainName) {
 
 async function onResult(result, domains, lang) {
   await ensureVoice(lang);
-  say(lang === "ja" ? "総評を準備しています…" : "Preparing your summary…");
   if (!config || config.mock || !config.chat) {
     say(
       lang === "ja"
@@ -1095,6 +1123,7 @@ async function onResult(result, domains, lang) {
     );
     return;
   }
+  await acknowledge(lang, lang === "ja" ? "総評を準備しています…" : "Preparing your summary…");
   try {
     const breakdown = domains
       .map((name, i) => `${name}: ${result.dom[i]}/4`)
