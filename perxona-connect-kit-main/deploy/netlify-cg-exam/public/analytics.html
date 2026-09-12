@@ -126,13 +126,14 @@ td.q, td.r{max-width:280px}
         <input type="search" id="search">
         <span class="count-note" id="table-count"></span>
         <button class="btn ghost" id="refresh"></button>
+        <button class="btn ghost" id="csv-export"></button>
       </div>
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
               <th id="t-col-ts"></th><th id="t-col-kind"></th><th id="t-col-lang"></th>
-              <th id="t-col-domain"></th><th id="t-col-q"></th><th id="t-col-r"></th><th id="t-col-result"></th>
+              <th id="t-col-user"></th><th id="t-col-domain"></th><th id="t-col-q"></th><th id="t-col-r"></th><th id="t-col-result"></th>
             </tr>
           </thead>
           <tbody id="table-body"></tbody>
@@ -161,11 +162,12 @@ const I18N = {
     statTotal: "総件数", statAsk: "自由質問", statHint: "ヒント", statSuccess: "回答成功",
     statJa: "日本語", statEn: "English",
     hDomain: "分野別", hDays: "日別件数(直近14日)", hTable: "質問一覧",
-    searchPh: "質問・回答をキーワード検索…", refresh: "更新",
-    colTs: "日時", colKind: "種別", colLang: "言語", colDomain: "分野", colQ: "質問", colR: "回答", colResult: "結果",
+    searchPh: "質問・回答をキーワード検索…", refresh: "更新", csvExport: "CSVダウンロード",
+    colTs: "日時", colKind: "種別", colLang: "言語", colUser: "ユーザー", colDomain: "分野", colQ: "質問", colR: "回答", colResult: "結果",
     tagHint: "ヒント", tagAsk: "質問", tagOk: "成功", tagNg: "失敗",
     noData: "まだデータがありません。",
     uncategorized: "(未分類)",
+    noUsername: "—",
     countShown: (shown, filtered, total) => `${shown} / ${filtered} 件を表示（全 ${total} 件）`,
     countAll: (filtered, total) => `${filtered} 件（全 ${total} 件）`,
     locale: "ja-JP",
@@ -184,11 +186,12 @@ const I18N = {
     statTotal: "Total", statAsk: "Free questions", statHint: "Hints", statSuccess: "Successful replies",
     statJa: "Japanese", statEn: "English",
     hDomain: "By domain", hDays: "Daily count (last 14 days)", hTable: "Question log",
-    searchPh: "Search questions and replies…", refresh: "Refresh",
-    colTs: "Date", colKind: "Kind", colLang: "Lang", colDomain: "Domain", colQ: "Question", colR: "Reply", colResult: "Result",
+    searchPh: "Search questions and replies…", refresh: "Refresh", csvExport: "Download CSV",
+    colTs: "Date", colKind: "Kind", colLang: "Lang", colUser: "User", colDomain: "Domain", colQ: "Question", colR: "Reply", colResult: "Result",
     tagHint: "Hint", tagAsk: "Ask", tagOk: "OK", tagNg: "Failed",
     noData: "No data yet.",
     uncategorized: "(Uncategorized)",
+    noUsername: "—",
     countShown: (shown, filtered, total) => `Showing ${shown} / ${filtered} (of ${total} total)`,
     countAll: (filtered, total) => `${filtered} (of ${total} total)`,
     locale: "en-US",
@@ -249,6 +252,7 @@ const gateHint = document.getElementById("gate-hint");
 const view = document.getElementById("view");
 const searchInput = document.getElementById("search");
 const refreshBtn = document.getElementById("refresh");
+const csvExportBtn = document.getElementById("csv-export");
 const tableBody = document.getElementById("table-body");
 const tableCount = document.getElementById("table-count");
 const langtoggle = document.getElementById("langtoggle");
@@ -279,9 +283,11 @@ function applyStatic() {
   document.getElementById("t-h-table").textContent = s.hTable;
   searchInput.placeholder = s.searchPh;
   refreshBtn.textContent = s.refresh;
+  csvExportBtn.textContent = s.csvExport;
   document.getElementById("t-col-ts").textContent = s.colTs;
   document.getElementById("t-col-kind").textContent = s.colKind;
   document.getElementById("t-col-lang").textContent = s.colLang;
+  document.getElementById("t-col-user").textContent = s.colUser;
   document.getElementById("t-col-domain").textContent = s.colDomain;
   document.getElementById("t-col-q").textContent = s.colQ;
   document.getElementById("t-col-r").textContent = s.colR;
@@ -385,6 +391,40 @@ refreshBtn.addEventListener("click", () => {
 
 searchInput.addEventListener("input", () => renderTable());
 
+function toCsvField(value) {
+  const s = String(value ?? "");
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+// Exports whatever the search box currently narrows the table down to (not
+// just the on-screen TABLE_ROW_LIMIT-capped rows) as a CSV file. UTF-8 BOM
+// so Excel (including Japanese Excel) opens it without mangling non-ASCII
+// text instead of needing an explicit "Import" with encoding picked by hand.
+csvExportBtn.addEventListener("click", () => {
+  const rows = filterEntries().map((e) => [
+    e.ts ?? "",
+    e.kind === "hint" ? "hint" : "ask",
+    e.lang === "en" ? "en" : "ja",
+    e.username ?? "",
+    e.domain ? displayDomain(canonicalDomain(e.domain)) : "",
+    e.question ?? "",
+    e.reply ?? "",
+    e.success ? "1" : "0",
+    e.errorMessage ?? "",
+  ]);
+  const header = ["timestamp", "kind", "lang", "username", "domain", "question", "reply", "success", "error_message"];
+  const csv = [header, ...rows].map((r) => r.map(toCsvField).join(",")).join("\r\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `cg-exam-questions-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
 function barList(container, counts, total) {
   container.innerHTML = "";
   const rows = Object.entries(counts).sort((a, b) => b[1] - a[1]);
@@ -446,17 +486,23 @@ function formatTs(iso) {
   }
 }
 
+// Shared by the table and the CSV export so "download" always matches
+// whatever the search box currently narrows the table down to.
+function filterEntries() {
+  const q = searchInput.value.trim().toLowerCase();
+  if (!q) return entries;
+  return entries.filter(
+    (e) =>
+      (e.question ?? "").toLowerCase().includes(q) ||
+      (e.reply ?? "").toLowerCase().includes(q) ||
+      (e.domain ?? "").toLowerCase().includes(q) ||
+      (e.username ?? "").toLowerCase().includes(q),
+  );
+}
+
 function renderTable() {
   const s = t();
-  const q = searchInput.value.trim().toLowerCase();
-  const filtered = q
-    ? entries.filter(
-        (e) =>
-          (e.question ?? "").toLowerCase().includes(q) ||
-          (e.reply ?? "").toLowerCase().includes(q) ||
-          (e.domain ?? "").toLowerCase().includes(q),
-      )
-    : entries;
+  const filtered = filterEntries();
   const shown = filtered.slice(0, TABLE_ROW_LIMIT);
   tableCount.textContent =
     filtered.length > shown.length
@@ -469,6 +515,7 @@ function renderTable() {
       <td>${formatTs(e.ts)}</td>
       <td>${e.kind === "hint" ? `<span class="tag hint">${escapeHtml(s.tagHint)}</span>` : `<span class="tag ask">${escapeHtml(s.tagAsk)}</span>`}</td>
       <td>${e.lang === "en" ? "EN" : "JA"}</td>
+      <td>${escapeHtml(e.username || s.noUsername)}</td>
       <td>${escapeHtml(e.domain ? displayDomain(canonicalDomain(e.domain)) : "—")}</td>
       <td class="q">${escapeHtml(e.question)}</td>
       <td class="r">${escapeHtml(e.reply ?? (e.errorMessage ?? "—"))}</td>

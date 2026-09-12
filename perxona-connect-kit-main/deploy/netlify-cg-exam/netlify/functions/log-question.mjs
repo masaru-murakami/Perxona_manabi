@@ -18,7 +18,7 @@ function truncateText(value, maxLength) {
 // every askQuestion()/hint() call, success or failure. A write failure here
 // is logged server-side only and never surfaces to the learner-facing UI:
 // losing one analytics row is far better than breaking the question flow.
-// Request: { sessionId?, lang, domain?, question, reply?, success, errorMessage?, kind? }
+// Request: { sessionId?, username?, lang, domain?, question, reply?, success, errorMessage?, kind? }
 // `kind` is "ask" (default) or "hint" — see samples/express/server.mjs's
 // matching route for why.
 export default async (req) => {
@@ -38,6 +38,7 @@ export default async (req) => {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     ts: new Date().toISOString(),
     sessionId: truncateText(body.sessionId, 100),
+    username: truncateText(body.username, 100),
     lang: body.lang === "en" ? "en" : "ja",
     domain: truncateText(body.domain, 200),
     kind: body.kind === "hint" ? "hint" : "ask",

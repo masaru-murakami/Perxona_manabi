@@ -152,6 +152,10 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
 .hint-row .btn{font-size:12px}
 .admin-link{color:var(--muted);text-decoration:none;font-family:var(--mono)}
 .admin-link:hover{color:var(--fill);text-decoration:underline}
+.namefield{margin-top:28px}
+.namefield label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+.namefield input{width:100%;max-width:360px;padding:10px 12px;border:1px solid var(--line);border-radius:4px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--surface)}
+.namefield input:focus{outline:none;border-color:var(--ink)}
 .examgrid{display:grid;gap:14px;margin:40px 0}
 .examrow{display:flex;gap:10px;align-items:stretch}
 .examcard{display:block;flex:1;min-width:0;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:20px 22px;color:inherit;cursor:pointer;transition:border-color .15s,transform .15s}
@@ -196,6 +200,10 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
 <section class="screen active" id="s-select">
   <div class="wrap">
     <div class="examgrid" id="examgrid"></div>
+    <div class="namefield">
+      <label for="username-input" id="t-username-label"></label>
+      <input type="text" id="username-input" maxlength="60" autocomplete="name">
+    </div>
     <footer><a class="admin-link" href="analytics.html" target="_blank" rel="noopener">質問ログ分析(運営者用)</a></footer>
   </div>
 </section>
@@ -299,7 +307,7 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
   </div>
   <select class="avatar-scene-select" id="avatar-scene-select">
     <option value="">Default scene</option>
-    <option value="01KPW5ES2MXZS4VMVW20J4GSK4">Outdoor school</option>
+    <option value="01KPW5ES2MXZS4VMVW20J4GSK4" selected>Outdoor school</option>
   </select>
   <label class="avatar-accent">
     <input type="checkbox" id="avatar-accent-toggle">
@@ -323,6 +331,7 @@ const APP_I18N={
 ja:{
  htmlLang:"ja", marks:"アイウエ",
  selectH:"検定を選ぶ", selectSub:"挑戦したい検定の模擬試験を選んでください。", examExplain:"解説",
+ usernameLabel:"お名前（任意・分析ログに記録されます）", usernamePh:"例：山田太郎",
  loading:"読み込み中…", loadFail:m=>"読み込みに失敗しました: "+m,
  hMode:"解き方を選ぶ", hSets:"回を選ぶ", hRadar:"領域別の到達度", hReview:"解答と解説",
  modeExam:"本番モード", modeStudy:"演習モード",
@@ -349,6 +358,7 @@ ja:{
 en:{
  htmlLang:"en", marks:"ABCD",
  selectH:"Choose a certification", selectSub:"Pick which certification's mock exam you'd like to try.", examExplain:"Explain",
+ usernameLabel:"Your name (optional — recorded in the analytics log)", usernamePh:"e.g. Jane Doe",
  loading:"Loading…", loadFail:m=>"Failed to load: "+m,
  hMode:"Choose how to take it", hSets:"Choose a set", hRadar:"Score by subject area", hReview:"Answers and explanations",
  modeExam:"Exam mode", modeStudy:"Practice mode",
@@ -487,6 +497,8 @@ function applyStatic(){
   $("t-eyebrow").textContent=EXAM?t.eyebrow:"";
   $("t-title").innerHTML=EXAM?t.title:t.selectH;
   $("t-sub").textContent=EXAM?t.sub:t.selectSub;
+  $("t-username-label").textContent=t.usernameLabel;
+  $("username-input").placeholder=t.usernamePh;
   renderExamGrid();
   if(!EXAM)return; // nothing more to fill in until an exam is chosen
   $("spec").innerHTML=t.spec.map(p=>'<div><dt>'+p[0]+'</dt><dd>'+p[1]+'</dd></div>').join("");
@@ -600,6 +612,21 @@ function setLang(l){
 }
 $("lang-en").onclick=()=>setLang("en");
 $("lang-ja").onclick=()=>setLang("ja");
+
+/* Optional display name, shown on the certification picker and attached to
+   every question/hint this browser logs (see avatar.js's logQuestion) so
+   analytics.html can show who asked what. Stored under the same
+   localStorage key avatar.js reads — populated once here (not from
+   applyStatic, which reruns on every lang toggle and would stomp on
+   whatever the learner is mid-typing). */
+const USERNAME_KEY="cg-exam-username";
+(()=>{
+  const input=$("username-input");
+  try{ input.value=localStorage.getItem(USERNAME_KEY)||""; }catch{}
+  input.addEventListener("input",()=>{
+    try{ localStorage.setItem(USERNAME_KEY,input.value.trim()); }catch{}
+  });
+})();
 
 function renderSets(){
   const g=$("setgrid");g.innerHTML="";

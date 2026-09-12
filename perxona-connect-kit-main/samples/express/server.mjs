@@ -877,7 +877,7 @@ async function readQuestionLogEntries() {
 // the write finishes and never surfaces a write failure to the learner-
 // facing UI: losing one analytics row is far better than breaking the
 // question flow over it.
-// Request: { sessionId?, lang, domain?, question, reply?, success, errorMessage?, kind? }
+// Request: { sessionId?, username?, lang, domain?, question, reply?, success, errorMessage?, kind? }
 // `kind` distinguishes a free-text "ask the AI" question from a "hint"
 // request (the hint button never reveals the answer — see avatar.js's
 // hint()) — defaults to "ask" for callers that predate this field.
@@ -892,6 +892,7 @@ app.post("/api/log-question", async (req, res) => {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     ts: new Date().toISOString(),
     sessionId: truncateText(body.sessionId, 100),
+    username: truncateText(body.username, 100),
     lang: body.lang === "en" ? "en" : "ja",
     domain: truncateText(body.domain, 200),
     kind: body.kind === "hint" ? "hint" : "ask",

@@ -61,6 +61,19 @@ function getSessionId() {
 }
 const sessionId = getSessionId();
 
+// The picker screen's optional name field (index.html) writes here on every
+// keystroke — read fresh each time instead of caching at module load, since
+// the learner can fill it in (or edit it) after avatar.js has already
+// initialized.
+function getUsername() {
+  try {
+    const v = localStorage.getItem("cg-exam-username");
+    return v && v.trim() ? v.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 // Fire-and-forget logging for the analytics view (analytics.html /
 // GET /api/analytics) — never lets a logging failure affect the
 // learner-facing question flow, so it's deliberately not awaited by callers.
@@ -69,6 +82,7 @@ function logQuestion({ domain, question, reply, success, errorMessage, kind = "a
     method: "POST",
     body: {
       sessionId,
+      username: getUsername(),
       lang: lastLang,
       domain: domain ?? null,
       kind,
@@ -301,11 +315,16 @@ async function init() {
     lastLang = initialLang;
     applyAskFormLang(initialLang);
     currentVoiceId = voiceForLang(initialLang) ?? voiceId ?? undefined;
-    currentSceneId = sceneId;
+    // Honor whichever scene the <select> starts on (its HTML `selected`
+    // option — e.g. "Outdoor school" by default) instead of always using
+    // the server's DEMO_DEFAULT_SCENE_ID, so changing the picker's default
+    // doesn't need an env change/redeploy. Empty value ("Default scene")
+    // still falls back to the server default.
+    currentSceneId = sceneSelect?.value || sceneId;
     const { connect_token } = await requestJson("/api/connect-token");
     await presenter.initialize(connect_token, {
       avatarId,
-      sceneId,
+      sceneId: currentSceneId,
       voiceId: currentVoiceId,
     });
   })().catch((error) => {
