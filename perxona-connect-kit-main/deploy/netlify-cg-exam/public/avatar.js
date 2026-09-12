@@ -775,6 +775,96 @@ async function explainCertification(item, lang) {
   }
 }
 
+// Increments and returns this browser's local "visit count" — purely a
+// localStorage counter (device-scoped, not tied to sessionId/server data),
+// bumped once per "はじめる"/"Get Started" click on the picker screen. This
+// is "usage count" as index.html displays it; the *question* count below
+// comes from the server since only it can see the learner's own logged
+// entries.
+function bumpUsageCount() {
+  const key = "cg-exam-usage-count";
+  try {
+    const n = (parseInt(localStorage.getItem(key), 10) || 0) + 1;
+    localStorage.setItem(key, String(n));
+    return n;
+  } catch {
+    return 1;
+  }
+}
+
+// Scoped to this browser's own sessionId only — see /api/my-stats's doc
+// comment in server.mjs for why this doesn't need the analytics password.
+async function fetchMyQuestionCount() {
+  try {
+    const result = await requestJson(`/api/my-stats?sessionId=${encodeURIComponent(sessionId)}`);
+    return typeof result.count === "number" ? result.count : 0;
+  } catch (error) {
+    console.error("[avatar] failed to fetch my-stats", error);
+    return null; // null (not 0) so callers can tell "unknown" from "genuinely zero"
+  }
+}
+
+// "はじめる"/"Get Started" button next to the picker screen's optional name
+// field (index.html). Bumps the local visit counter, looks up how many
+// questions/hints this browser has ever logged, has the tutor greet the
+// learner by name (if given) referencing that track record, and returns
+// both numbers so index.html can render its own stat line without
+// duplicating the fetch.
+async function greetUser(name, lang) {
+  lastLang = lang;
+  const usageCount = bumpUsageCount();
+  const questionCount = await fetchMyQuestionCount();
+  const t = ASK_TEXT[lang] ?? ASK_TEXT.ja;
+  const trimmedName = (name ?? "").trim();
+  await ensureVoice(lang);
+  say(t.thinking);
+  const fallbackGreeting = async () => {
+    const motionId = pickMotion(MOTION_KEYWORDS.greeting);
+    await speak(withMotion(pick(GREETINGS[lang] ?? GREETINGS.ja), motionId));
+  };
+  if (!config || config.mock || !config.chat) {
+    await fallbackGreeting();
+    return { usageCount, questionCount };
+  }
+  try {
+    const prompt = (
+      lang === "ja"
+        ? [
+            "あなたは親しみやすい資格検定の案内役アバターです。",
+            trimmedName
+              ? `受験者の名前は「${trimmedName}」です。名前を呼びかけてください。`
+              : "受験者の名前は分かっていません。名前には触れないでください。",
+            `これはこの受験者にとって${usageCount}回目の訪問です。`,
+            questionCount
+              ? `これまでに合計${questionCount}件の質問・ヒント依頼を送っています。その実績に軽く触れて労い、学習を励ましてください。`
+              : "まだ質問やヒントを使った実績はありません。初めての利用を歓迎し、「AIに質問する」フォームを気軽に使ってみるよう優しく促してください。",
+            "日本語で2〜3文の自然な話し言葉で答えてください。Motion Markupは付けないでください。",
+          ]
+        : [
+            "You are a friendly certification-exam guide avatar.",
+            trimmedName
+              ? `The test-taker's name is "${trimmedName}". Greet them by name.`
+              : "You don't know the test-taker's name — don't address them by name.",
+            `This is their visit number ${usageCount} to this app.`,
+            questionCount
+              ? `They have sent ${questionCount} questions/hint requests in total so far. Briefly and warmly reference that track record and encourage their studying.`
+              : "They have no question or hint history yet. Warmly welcome them and gently encourage them to try the \"Ask the AI\" form.",
+            "Answer in 2-3 natural spoken English sentences. Do not add Motion Markup.",
+          ]
+    ).join("\n");
+    const result = await requestJson("/api/demo-script", {
+      method: "POST",
+      body: { avatarId: config.defaults.avatarId, prompt },
+    });
+    const motionId = pickMotion(MOTION_KEYWORDS.greeting);
+    await speak(withMotion(result.script, motionId));
+  } catch (error) {
+    console.error("[avatar] greetUser failed", error);
+    await fallbackGreeting();
+  }
+  return { usageCount, questionCount };
+}
+
 // "Hint" button — only shown by index.html in Practice mode before the
 // learner answers (see renderQ()'s #hint-row toggle). Always uses
 // currentQuestion (set by onQuestion on the same render that shows the
@@ -1089,5 +1179,6 @@ window.CGExamAvatar = {
   onExamLoad,
   hint,
   explainCertification,
+  greetUser,
 };
 init();

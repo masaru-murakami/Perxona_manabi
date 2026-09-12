@@ -934,6 +934,28 @@ app.get("/api/analytics", async (req, res) => {
   }
 });
 
+// GET /api/my-stats?sessionId=... — unauthenticated (no ANALYTICS_PASSWORD
+// needed), unlike /api/analytics above: it only ever returns a single count
+// scoped to the sessionId the caller already holds (a random id avatar.js
+// generates into localStorage — see getSessionId() there), never the full
+// log or anyone else's data. Powers the certification-picker screen's
+// "questions asked so far" stat and the tutor's personalized greeting.
+app.get("/api/my-stats", async (req, res) => {
+  const sessionId = truncateText(req.query.sessionId, 100);
+  if (!sessionId) {
+    res.json({ count: 0 });
+    return;
+  }
+  try {
+    const entries = await readQuestionLogEntries();
+    const count = entries.filter((entry) => entry.sessionId === sessionId).length;
+    res.json({ count });
+  } catch (err) {
+    console.error("[analytics] failed to read question log for my-stats:", err);
+    res.json({ count: 0 });
+  }
+});
+
 // ── Chatbot routes ──────────────────────────────────────────────────────────
 // GET    /api/chatbots              → Page { items: [{ id, name, status }] }
 // POST   /api/chatbots              → ChatBotDetailResponse (201 proxied as 200)

@@ -15,7 +15,16 @@
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{background:var(--paper);color:var(--ink);font-family:var(--gothic);font-size:15px;line-height:1.7;-webkit-font-smoothing:antialiased}
-.wrap{max-width:840px;margin:0 auto;padding:0 20px 96px}
+/* position+z-index above .avatar-panel's z-index:40 (avatar.css) is
+   deliberate, not decorative: that panel is `position:fixed`, which paints
+   above ordinary (non-positioned) content regardless of DOM order no matter
+   its z-index value. Without this, any button that visually falls under
+   the panel's bottom-right footprint (buttons near a screen's bottom, on a
+   short viewport) is *unclickable* — a real mouse click there silently
+   lands on the avatar's <iframe> instead, with no error. Found by testing
+   the "Get Started" button; fixed here once for every .wrap instead of
+   patching each affected row. */
+.wrap{position:relative;z-index:41;max-width:840px;margin:0 auto;padding:0 20px 96px}
 .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
 button{font-family:inherit;font-size:inherit;cursor:pointer}
 button:focus-visible{outline:2px solid var(--fill);outline-offset:2px}
@@ -154,8 +163,11 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
 .admin-link:hover{color:var(--fill);text-decoration:underline}
 .namefield{margin-top:28px}
 .namefield label{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
-.namefield input{width:100%;max-width:360px;padding:10px 12px;border:1px solid var(--line);border-radius:4px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--surface)}
-.namefield input:focus{outline:none;border-color:var(--ink)}
+.namefield-row{display:flex;gap:10px;max-width:460px}
+.namefield-row input{flex:1;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:4px;font-size:14px;font-family:inherit;color:var(--ink);background:var(--surface)}
+.namefield-row input:focus{outline:none;border-color:var(--ink)}
+.namefield-row .btn{flex:0 0 auto;font-size:13px;cursor:pointer}
+.namefield-stats{margin-top:10px;color:var(--muted);font-size:13px;font-family:var(--mono)}
 .examgrid{display:grid;gap:14px;margin:40px 0}
 .examrow{display:flex;gap:10px;align-items:stretch}
 .examcard{display:block;flex:1;min-width:0;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:20px 22px;color:inherit;cursor:pointer;transition:border-color .15s,transform .15s}
@@ -202,7 +214,11 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
     <div class="examgrid" id="examgrid"></div>
     <div class="namefield">
       <label for="username-input" id="t-username-label"></label>
-      <input type="text" id="username-input" maxlength="60" autocomplete="name">
+      <div class="namefield-row">
+        <input type="text" id="username-input" maxlength="60" autocomplete="name">
+        <button type="button" class="btn" id="start-btn"></button>
+      </div>
+      <p class="namefield-stats" id="namefield-stats" hidden></p>
     </div>
     <footer><a class="admin-link" href="analytics.html" target="_blank" rel="noopener">質問ログ分析(運営者用)</a></footer>
   </div>
@@ -331,7 +347,8 @@ const APP_I18N={
 ja:{
  htmlLang:"ja", marks:"アイウエ",
  selectH:"検定を選ぶ", selectSub:"挑戦したい検定の模擬試験を選んでください。", examExplain:"解説",
- usernameLabel:"お名前（任意・分析ログに記録されます）", usernamePh:"例：山田太郎",
+ usernameLabel:"お名前（任意・分析ログに記録されます）", usernamePh:"例：山田太郎", startBtn:"はじめる",
+ statsLine:(q,u)=>"質問した数: "+q+"件　・　利用回数: "+u+"回目",
  loading:"読み込み中…", loadFail:m=>"読み込みに失敗しました: "+m,
  hMode:"解き方を選ぶ", hSets:"回を選ぶ", hRadar:"領域別の到達度", hReview:"解答と解説",
  modeExam:"本番モード", modeStudy:"演習モード",
@@ -358,7 +375,8 @@ ja:{
 en:{
  htmlLang:"en", marks:"ABCD",
  selectH:"Choose a certification", selectSub:"Pick which certification's mock exam you'd like to try.", examExplain:"Explain",
- usernameLabel:"Your name (optional — recorded in the analytics log)", usernamePh:"e.g. Jane Doe",
+ usernameLabel:"Your name (optional — recorded in the analytics log)", usernamePh:"e.g. Jane Doe", startBtn:"Get Started",
+ statsLine:(q,u)=>"Questions asked: "+q+"　·　Visit #"+u,
  loading:"Loading…", loadFail:m=>"Failed to load: "+m,
  hMode:"Choose how to take it", hSets:"Choose a set", hRadar:"Score by subject area", hReview:"Answers and explanations",
  modeExam:"Exam mode", modeStudy:"Practice mode",
@@ -499,6 +517,7 @@ function applyStatic(){
   $("t-sub").textContent=EXAM?t.sub:t.selectSub;
   $("t-username-label").textContent=t.usernameLabel;
   $("username-input").placeholder=t.usernamePh;
+  $("start-btn").textContent=t.startBtn;
   renderExamGrid();
   if(!EXAM)return; // nothing more to fill in until an exam is chosen
   $("spec").innerHTML=t.spec.map(p=>'<div><dt>'+p[0]+'</dt><dd>'+p[1]+'</dd></div>').join("");
@@ -627,6 +646,23 @@ const USERNAME_KEY="cg-exam-username";
     try{ localStorage.setItem(USERNAME_KEY,input.value.trim()); }catch{}
   });
 })();
+
+/* "はじめる"/"Get Started" — saves the name (in case the field was filled by
+   autofill/paste without an "input" event reaching the listener above),
+   then hands off to avatar.js's greetUser(), which bumps the local visit
+   counter, looks up this browser's own logged question count from the
+   server, and has the tutor greet the learner referencing both. Renders
+   the returned numbers into the stats line once greetUser resolves. */
+$("start-btn").onclick=async()=>{
+  const input=$("username-input"),name=input.value.trim();
+  try{ localStorage.setItem(USERNAME_KEY,name); }catch{}
+  const stats=await window.CGExamAvatar?.greetUser(name,lang);
+  if(stats){
+    const t=T(),el=$("namefield-stats");
+    el.textContent=t.statsLine(stats.questionCount??"–",stats.usageCount);
+    el.hidden=false;
+  }
+};
 
 function renderSets(){
   const g=$("setgrid");g.innerHTML="";
