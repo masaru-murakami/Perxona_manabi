@@ -480,6 +480,20 @@ function acknowledge(lang, displayText) {
   return speak(withMotion(pick(ACK_LINES[lang] ?? ACK_LINES.ja), motionId), displayText);
 }
 
+// greetUser()'s own acknowledgment lines — the picker screen's "Get
+// Started" button never follows an actual question, so ACK_LINES' "let me
+// look into that" framing doesn't fit there. Just a quick, casual hello
+// instead, while the real (LLM-written) greeting is still loading.
+const GREET_ACK_LINES = {
+  ja: ["ああ、こんにちは。", "おっ、来たね。", "こんにちは、待ってたよ。"],
+  en: ["Oh, hello!", "Hey there!", "Hi, good to see you!"],
+};
+
+function acknowledgeGreeting(lang, displayText) {
+  const motionId = pickMotion(MOTION_KEYWORDS.greeting);
+  return speak(withMotion(pick(GREET_ACK_LINES[lang] ?? GREET_ACK_LINES.ja), motionId), displayText);
+}
+
 const GREETINGS = {
   ja: [
     "さあ、はじめましょう。落ち着いて解いていきましょうね。",
@@ -878,7 +892,7 @@ async function greetUser(name, lang) {
     await fallbackGreeting();
     return { usageCount, questionCount, rank };
   }
-  await acknowledge(lang, t.thinking);
+  await acknowledgeGreeting(lang, t.thinking);
   try {
     const prompt = (
       lang === "ja"
