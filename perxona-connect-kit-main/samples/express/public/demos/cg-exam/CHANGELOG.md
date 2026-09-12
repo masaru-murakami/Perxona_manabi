@@ -1,5 +1,7 @@
 # cg-exam — 開発サマリー（2026-09-11 〜 2026-09-12）
 
+*[English version here](CHANGELOG.en.md)*
+
 このドキュメントは、2日間の開発セッションで `cg-exam` デモ（CG Creator Certification 模擬試験アプリ、
 本番: https://perxona-manabi.netlify.app/ ）に加えた新規開発・実装のまとめです。Git のコミット履歴
 （`9987194`〜`54b1c96`、全28コミット）を基に、機能単位で整理しています。
