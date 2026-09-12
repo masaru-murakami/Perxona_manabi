@@ -173,10 +173,16 @@ let lastLang = "ja";
 // hardcoded exam name, so avatar.js works for whichever exam is loaded.
 // Falls back to a generic phrase before any exam has loaded yet.
 let examTitle = { ja: "検定試験", en: "certification exam" };
+// Persona: a cheering/support companion, not a teacher — a friend who
+// studies alongside the learner and roots for them, rather than someone
+// lecturing from authority. Every LLM prompt in this file routes through
+// this (directly via tutorPhrase(), or the same framing spelled out in
+// explainCertification()/greetUser() below, which don't have a question to
+// react to) so the persona stays consistent everywhere the avatar speaks.
 function tutorPhrase(lang) {
   return lang === "ja"
-    ? `あなたは${examTitle.ja}の家庭教師アバターです。`
-    : `You are a friendly tutor avatar for the ${examTitle.en} exam.`;
+    ? `あなたは${examTitle.ja}の学習に付き添う応援アバターです。先生や家庭教師ではなく、一緒に頑張る友達のような立場で、対等な口調で接してください。`
+    : `You are a cheerful companion avatar who studies alongside the learner preparing for the ${examTitle.en} exam. You are not a teacher or tutor — you're a friend rooting for them, so speak like a peer, not an authority.`;
 }
 // The question currently on screen, kept in sync by index.html's renderQ()
 // calling onQuestion() on every render (question change or lang toggle).
@@ -441,7 +447,7 @@ async function speak(scriptText) {
 const GREETINGS = {
   ja: [
     "さあ、はじめましょう。落ち着いて解いていきましょうね。",
-    "頑張ってください、わたしも隣で見ていますよ。",
+    "一緒に頑張りましょう、わたしもずっと応援していますよ。",
   ],
   en: [
     "Let's get started — take your time.",
@@ -747,14 +753,14 @@ async function explainCertification(item, lang) {
     const prompt = (
       lang === "ja"
         ? [
-            "あなたは親しみやすい資格検定の案内役アバターです。",
+            "あなたは学習者の隣で一緒に頑張る、応援アバターです。先生や家庭教師ではなく友達のような立場で話してください。",
             "次の検定について、受験を検討している学習者向けに日本語で400字程度で紹介してください。",
             `検定名: ${title}`,
             `概要: ${summary}`,
             "何を学ぶ検定か、どんな人におすすめかが伝わるように、自然な話し言葉でまとめてください。Motion Markupは付けないでください。",
           ]
         : [
-            "You are a friendly certification-exam guide avatar.",
+            "You are a cheerful companion avatar who studies alongside learners — not a teacher or tutor, but a friend rooting for them.",
             "Introduce the following certification to a learner considering taking it, in natural spoken English, about 60-70 words (roughly matching a 400-character Japanese explanation).",
             `Certification: ${title}`,
             `Summary: ${summary}`,
@@ -804,16 +810,37 @@ async function fetchMyQuestionCount() {
   }
 }
 
+// Five-tier engagement rank shown on the picker screen and referenced in
+// the tutor's greeting — a lightweight "gamification" signal, not tied to
+// exam score. Weights questions/hints (the more meaningful engagement
+// signal) twice as heavily as a plain visit.
+const RANKS = [
+  { min: 0, ja: "ビギナー", en: "Beginner" },
+  { min: 2, ja: "ブロンズ", en: "Bronze" },
+  { min: 10, ja: "シルバー", en: "Silver" },
+  { min: 30, ja: "ゴールド", en: "Gold" },
+  { min: 60, ja: "プラチナ", en: "Platinum" },
+];
+function computeRank(usageCount, questionCount) {
+  const score = (questionCount ?? 0) * 2 + (usageCount ?? 0);
+  let rank = RANKS[0];
+  for (const r of RANKS) {
+    if (score >= r.min) rank = r;
+  }
+  return rank;
+}
+
 // "はじめる"/"Get Started" button next to the picker screen's optional name
 // field (index.html). Bumps the local visit counter, looks up how many
-// questions/hints this browser has ever logged, has the tutor greet the
-// learner by name (if given) referencing that track record, and returns
-// both numbers so index.html can render its own stat line without
-// duplicating the fetch.
+// questions/hints this browser has ever logged, has the avatar greet the
+// learner by name (if given) referencing that track record and rank, and
+// returns all three so index.html can render its own stat line without
+// duplicating the fetch/rank logic.
 async function greetUser(name, lang) {
   lastLang = lang;
   const usageCount = bumpUsageCount();
   const questionCount = await fetchMyQuestionCount();
+  const rank = computeRank(usageCount, questionCount);
   const t = ASK_TEXT[lang] ?? ASK_TEXT.ja;
   const trimmedName = (name ?? "").trim();
   await ensureVoice(lang);
@@ -824,30 +851,30 @@ async function greetUser(name, lang) {
   };
   if (!config || config.mock || !config.chat) {
     await fallbackGreeting();
-    return { usageCount, questionCount };
+    return { usageCount, questionCount, rank };
   }
   try {
     const prompt = (
       lang === "ja"
         ? [
-            "あなたは親しみやすい資格検定の案内役アバターです。",
+            "あなたは学習者の隣で一緒に頑張る、応援アバターです。先生や家庭教師ではなく友達のような立場で、対等な口調で話してください。",
             trimmedName
               ? `受験者の名前は「${trimmedName}」です。名前を呼びかけてください。`
               : "受験者の名前は分かっていません。名前には触れないでください。",
-            `これはこの受験者にとって${usageCount}回目の訪問です。`,
+            `これはこの受験者にとって${usageCount}回目の訪問で、現在のランクは「${rank.ja}」です。`,
             questionCount
-              ? `これまでに合計${questionCount}件の質問・ヒント依頼を送っています。その実績に軽く触れて労い、学習を励ましてください。`
+              ? `これまでに合計${questionCount}件の質問・ヒント依頼を送っています。その実績とランクに軽く触れて労い、学習を励ましてください。`
               : "まだ質問やヒントを使った実績はありません。初めての利用を歓迎し、「AIに質問する」フォームを気軽に使ってみるよう優しく促してください。",
             "日本語で2〜3文の自然な話し言葉で答えてください。Motion Markupは付けないでください。",
           ]
         : [
-            "You are a friendly certification-exam guide avatar.",
+            "You are a cheerful companion avatar who studies alongside learners — not a teacher or tutor, but a friend rooting for them. Speak like a peer.",
             trimmedName
               ? `The test-taker's name is "${trimmedName}". Greet them by name.`
               : "You don't know the test-taker's name — don't address them by name.",
-            `This is their visit number ${usageCount} to this app.`,
+            `This is their visit number ${usageCount} to this app, and their current rank is "${rank.en}".`,
             questionCount
-              ? `They have sent ${questionCount} questions/hint requests in total so far. Briefly and warmly reference that track record and encourage their studying.`
+              ? `They have sent ${questionCount} questions/hint requests in total so far. Briefly and warmly reference that track record and rank, and encourage their studying.`
               : "They have no question or hint history yet. Warmly welcome them and gently encourage them to try the \"Ask the AI\" form.",
             "Answer in 2-3 natural spoken English sentences. Do not add Motion Markup.",
           ]
@@ -862,7 +889,7 @@ async function greetUser(name, lang) {
     console.error("[avatar] greetUser failed", error);
     await fallbackGreeting();
   }
-  return { usageCount, questionCount };
+  return { usageCount, questionCount, rank };
 }
 
 // "Hint" button — only shown by index.html in Practice mode before the

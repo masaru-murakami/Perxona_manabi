@@ -170,11 +170,30 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
 .namefield-stats{margin-top:10px;color:var(--muted);font-size:13px;font-family:var(--mono)}
 .examgrid{display:grid;gap:14px;margin:40px 0}
 .examrow{display:flex;gap:10px;align-items:stretch}
-.examcard{display:block;flex:1;min-width:0;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:20px 22px;color:inherit;cursor:pointer;transition:border-color .15s,transform .15s}
-.examcard:hover{border-color:var(--ink);transform:translateY(-2px)}
-.examcard .t{font-family:var(--display);font-size:19px;font-weight:600;margin-bottom:6px}
-.examcard .s{color:var(--muted);font-size:13px}
-.examexplain{flex:0 0 auto;padding:0 20px;background:var(--surface);border:1px solid var(--line);border-radius:4px;color:var(--muted);font-family:var(--mono);font-size:12px;letter-spacing:.04em;cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s}
+/* Colorful per-certification banner cards — background gradient + a faint
+   inline-SVG motif per exam id (see EXAM_BANNER_CLASS in the script below),
+   with a left-to-right readability gradient so title/subtitle stay legible
+   over the artwork. isolation:isolate keeps the motif's z-index:-1 scoped
+   to this card instead of fighting .wrap's own stacking context. */
+.examcard{position:relative;isolation:isolate;overflow:hidden;display:block;flex:1;min-width:0;min-height:132px;text-align:left;padding:20px 22px;border:1px solid rgba(255,255,255,.18);border-radius:18px;color:#fff;cursor:pointer;box-shadow:0 10px 30px rgba(12,18,36,.16);transition:transform .15s}
+.examcard:hover{transform:translateY(-2px)}
+.examcard::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(90deg,rgba(4,9,20,.72) 0%,rgba(4,9,20,.50) 48%,rgba(4,9,20,.10) 78%,rgba(4,9,20,.04) 100%)}
+.examcard .t{position:relative;z-index:2;max-width:68%;font-family:var(--display);font-size:19px;font-weight:700;margin-bottom:6px;text-shadow:0 2px 10px rgba(0,0,0,.25)}
+.examcard .s{position:relative;z-index:2;max-width:68%;color:rgba(255,255,255,.85);font-size:13px}
+.examcard.cg-basic{background:radial-gradient(circle at 78% 18%,rgba(87,227,255,.38),transparent 25%),radial-gradient(circle at 92% 78%,rgba(46,126,255,.34),transparent 29%),linear-gradient(135deg,#083d63 0%,#075b85 46%,#1188ad 100%)}
+.examcard.cg-basic::before{content:"";position:absolute;z-index:-1;top:50%;right:4%;width:min(34vw,220px);aspect-ratio:1;transform:translateY(-50%) rotate(-4deg);opacity:.40;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='4' stroke-linejoin='round'%3E%3Cpath d='M110 20 190 64 110 108 30 64Z'/%3E%3Cpath d='M30 64v90l80 46 80-46V64'/%3E%3Cpath d='M110 108v92'/%3E%3Cpath opacity='.65' d='m69 86 79-44M70 176l79-44M150 86v90'/%3E%3C/g%3E%3C/svg%3E")}
+.examcard.cg-expert{background:radial-gradient(circle at 82% 22%,rgba(227,124,255,.36),transparent 24%),radial-gradient(circle at 91% 82%,rgba(105,124,255,.42),transparent 30%),linear-gradient(135deg,#281754 0%,#4a2382 48%,#6238a7 100%)}
+.examcard.cg-expert::before{content:"";position:absolute;z-index:-1;top:50%;right:3.5%;width:min(35vw,230px);aspect-ratio:1;transform:translateY(-50%);opacity:.42;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 240'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='3'%3E%3Ccircle cx='120' cy='120' r='88'/%3E%3Cellipse cx='120' cy='120' rx='42' ry='88'/%3E%3Cellipse cx='120' cy='120' rx='72' ry='88'/%3E%3Cpath d='M38 88h164M32 120h176M38 152h164'/%3E%3Cpath opacity='.6' d='m52 177 136-114M61 52l126 135'/%3E%3C/g%3E%3C/svg%3E")}
+.examcard.world-heritage{background:radial-gradient(circle at 82% 18%,rgba(255,220,111,.34),transparent 26%),radial-gradient(circle at 94% 82%,rgba(91,177,113,.30),transparent 30%),linear-gradient(135deg,#2d513f 0%,#4a6843 46%,#8a7137 100%)}
+.examcard.world-heritage::before{content:"";position:absolute;z-index:-1;top:50%;right:2%;width:min(38vw,250px);aspect-ratio:1.15;transform:translateY(-50%);opacity:.43;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 220'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 153 55-62 31 35 34-46 64 73'/%3E%3Ccircle cx='202' cy='48' r='19'/%3E%3Cpath d='M111 145h118M122 145v46M218 145v46M111 191h118M114 139l56-30 56 30Z'/%3E%3Cpath d='M140 145v46M159 145v46M180 145v46M199 145v46'/%3E%3C/g%3E%3C/svg%3E")}
+.examcard.default{background:linear-gradient(135deg,#2b2f3a 0%,#3a3f4d 50%,#4a4f5e 100%)}
+@media (max-width:640px){
+  .examcard{min-height:120px;padding:18px;border-radius:16px}
+  .examcard .t,.examcard .s{max-width:78%}
+  .examcard::before{right:-8%;opacity:.30}
+  .examcard::after{background:linear-gradient(90deg,rgba(4,9,20,.78) 0%,rgba(4,9,20,.58) 62%,rgba(4,9,20,.16) 100%)}
+}
+.examexplain{flex:0 0 auto;padding:0 20px;background:var(--surface);border:1px solid var(--line);border-radius:14px;color:var(--muted);font-family:var(--mono);font-size:12px;letter-spacing:.04em;cursor:pointer;white-space:nowrap;transition:border-color .15s,color .15s}
 .examexplain:hover{border-color:var(--ink);color:var(--ink)}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:11px 22px;border-radius:2px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:60}
 .toast.show{opacity:1}
@@ -211,7 +230,6 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
 
 <section class="screen active" id="s-select">
   <div class="wrap">
-    <div class="examgrid" id="examgrid"></div>
     <div class="namefield">
       <label for="username-input" id="t-username-label"></label>
       <div class="namefield-row">
@@ -220,6 +238,7 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
       </div>
       <p class="namefield-stats" id="namefield-stats" hidden></p>
     </div>
+    <div class="examgrid" id="examgrid"></div>
     <footer><a class="admin-link" href="analytics.html" target="_blank" rel="noopener">質問ログ分析(運営者用)</a></footer>
   </div>
 </section>
@@ -348,7 +367,7 @@ ja:{
  htmlLang:"ja", marks:"アイウエ",
  selectH:"検定を選ぶ", selectSub:"挑戦したい検定の模擬試験を選んでください。", examExplain:"解説",
  usernameLabel:"お名前（任意・分析ログに記録されます）", usernamePh:"例：山田太郎", startBtn:"はじめる",
- statsLine:(q,u)=>"質問した数: "+q+"件　・　利用回数: "+u+"回目",
+ statsLine:(q,u,r)=>"質問した数: "+q+"件　・　利用回数: "+u+"回目　・　ランク: "+r,
  loading:"読み込み中…", loadFail:m=>"読み込みに失敗しました: "+m,
  hMode:"解き方を選ぶ", hSets:"回を選ぶ", hRadar:"領域別の到達度", hReview:"解答と解説",
  modeExam:"本番モード", modeStudy:"演習モード",
@@ -376,7 +395,7 @@ en:{
  htmlLang:"en", marks:"ABCD",
  selectH:"Choose a certification", selectSub:"Pick which certification's mock exam you'd like to try.", examExplain:"Explain",
  usernameLabel:"Your name (optional — recorded in the analytics log)", usernamePh:"e.g. Jane Doe", startBtn:"Get Started",
- statsLine:(q,u)=>"Questions asked: "+q+"　·　Visit #"+u,
+ statsLine:(q,u,r)=>"Questions asked: "+q+"　·　Visit #"+u+"　·　Rank: "+r,
  loading:"Loading…", loadFail:m=>"Failed to load: "+m,
  hMode:"Choose how to take it", hSets:"Choose a set", hRadar:"Score by subject area", hReview:"Answers and explanations",
  modeExam:"Exam mode", modeStudy:"Practice mode",
@@ -548,6 +567,17 @@ function applyStatic(){
 
 /* ── Exam catalog (data/manifest.json + data/<id>.json) ─────────────────── */
 
+// Maps a manifest exam id to the banner motif class defined in the <style>
+// block above (.examcard.cg-basic etc.). An id with no entry here still
+// renders fine — falls back to the plain "default" gradient — so adding a
+// new certification never breaks the picker, it just won't have custom
+// artwork until a matching class (and mapping entry) is added.
+const EXAM_BANNER_CLASS={
+  "cg-creator-basic":"cg-basic",
+  "cg-creator-expert":"cg-expert",
+  "world-heritage-2kyu":"world-heritage"
+};
+
 function renderExamGrid(){
   const g=$("examgrid");
   if(!g)return;
@@ -557,7 +587,7 @@ function renderExamGrid(){
     const row=document.createElement("div");
     row.className="examrow";
     const b=document.createElement("button");
-    b.className="examcard";
+    b.className="examcard "+(EXAM_BANNER_CLASS[item.id]||"default");
     const ttl=document.createElement("div");ttl.className="t";ttl.textContent=item.title[lang]||item.title.ja;
     const sub=document.createElement("div");sub.className="s";sub.textContent=item.summary[lang]||item.summary.ja;
     b.appendChild(ttl);b.appendChild(sub);
@@ -659,7 +689,7 @@ $("start-btn").onclick=async()=>{
   const stats=await window.CGExamAvatar?.greetUser(name,lang);
   if(stats){
     const t=T(),el=$("namefield-stats");
-    el.textContent=t.statsLine(stats.questionCount??"–",stats.usageCount);
+    el.textContent=t.statsLine(stats.questionCount??"–",stats.usageCount,stats.rank?.[lang]??stats.rank?.ja??"");
     el.hidden=false;
   }
 };
