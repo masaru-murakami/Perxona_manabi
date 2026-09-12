@@ -168,18 +168,48 @@
   cursor: default;
 }
 
+/* Mobile (incl. Android): the desktop corner box doesn't work on a narrow,
+   short viewport — it either overlaps quiz content or gets squeezed
+   illegibly. Below 640px the avatar becomes a full-width bar pinned to the
+   window's bottom edge, always painted above the page (z-index above
+   .wrap's 41 — see index.html), avatar block on the left and everything
+   else ("communication": scene/accent/bubble/ask-form, wrapped in
+   .avatar-comm) on the right. The comm column scrolls internally so the
+   bar never exceeds --avatar-bar-max-h; index.html pads .wrap's bottom by
+   that same amount so page content and the toast never sit under it. */
 @media (max-width: 640px) {
   .avatar-panel {
-    right: 10px;
-    bottom: 10px;
-    width: 128px;
+    --avatar-bar-max-h: 280px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 45;
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    max-height: var(--avatar-bar-max-h);
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(17, 19, 26, 0.96);
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.3);
   }
   .avatar-stage {
-    width: 128px;
-    height: 128px;
+    flex: 0 0 84px;
+    width: 84px;
+    height: 84px;
+  }
+  .avatar-comm {
+    flex: 1;
+    min-width: 0;
+    max-height: calc(var(--avatar-bar-max-h) - 20px);
+    overflow-y: auto;
+  }
+  .avatar-comm > :first-child {
+    margin-top: 0;
   }
   .avatar-bubble {
-    max-height: 120px;
+    max-height: 96px;
     font-size: 11.5px;
   }
   .avatar-ask-form {

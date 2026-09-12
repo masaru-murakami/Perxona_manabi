@@ -205,7 +205,11 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
   .topnav{right:12px;top:12px}
   .langtoggle .knob,.langtoggle button{width:70px}
   .langtoggle[data-lang="en"] .knob{transform:translateX(70px)}
-  .toast{bottom:76px}
+  /* Below 640px the avatar becomes a fixed bottom bar (avatar.css,
+     --avatar-bar-max-h: 280px) instead of a corner box, so page content —
+     and the toast — need enough bottom clearance to never sit under it. */
+  .wrap{padding-bottom:300px}
+  .toast{bottom:300px}
   .spec{grid-template-columns:repeat(2,1fr)}
   .setgrid{grid-template-columns:repeat(4,1fr)}
   .grid{grid-template-columns:repeat(8,1fr)}
@@ -340,22 +344,28 @@ footer{border-top:1px solid var(--line);margin-top:60px;padding-top:18px;color:v
     <sv-presenter class="avatar-presenter"></sv-presenter>
     <p class="avatar-status" id="avatar-status">Avatar loading…</p>
   </div>
-  <select class="avatar-scene-select" id="avatar-scene-select">
-    <option value="">Default scene</option>
-    <option value="01KPW5ES2MXZS4VMVW20J4GSK4" selected>Outdoor school</option>
-  </select>
-  <label class="avatar-accent">
-    <input type="checkbox" id="avatar-accent-toggle">
-    <span id="avatar-accent-label">Japanese accent</span>
-  </label>
-  <p class="avatar-bubble" id="avatar-bubble" hidden></p>
-  <form class="avatar-ask-form" id="avatar-ask-form">
-    <input type="text" class="avatar-ask-input" id="avatar-ask-input"
-      placeholder="AIに質問する…" maxlength="300" autocomplete="off">
-    <button type="button" class="avatar-ask-mic" id="avatar-ask-mic"
-      aria-label="音声入力" title="音声入力" aria-pressed="false" hidden>🎤</button>
-    <button type="submit" class="avatar-ask-submit" id="avatar-ask-submit">質問する</button>
-  </form>
+  <!-- "Communication block": everything the learner reads/types, grouped so
+       it can sit to the right of the avatar block on the mobile bottom bar
+       (see .avatar-comm in avatar.css) while staying a plain vertical stack
+       on desktop, unchanged from before. -->
+  <div class="avatar-comm">
+    <select class="avatar-scene-select" id="avatar-scene-select">
+      <option value="">Default scene</option>
+      <option value="01KPW5ES2MXZS4VMVW20J4GSK4" selected>Outdoor school</option>
+    </select>
+    <label class="avatar-accent">
+      <input type="checkbox" id="avatar-accent-toggle">
+      <span id="avatar-accent-label">Japanese accent</span>
+    </label>
+    <p class="avatar-bubble" id="avatar-bubble" hidden></p>
+    <form class="avatar-ask-form" id="avatar-ask-form">
+      <input type="text" class="avatar-ask-input" id="avatar-ask-input"
+        placeholder="AIに質問する…" maxlength="300" autocomplete="off">
+      <button type="button" class="avatar-ask-mic" id="avatar-ask-mic"
+        aria-label="音声入力" title="音声入力" aria-pressed="false" hidden>🎤</button>
+      <button type="submit" class="avatar-ask-submit" id="avatar-ask-submit">質問する</button>
+    </form>
+  </div>
 </div>
 
 <script>
