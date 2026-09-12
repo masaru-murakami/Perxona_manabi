@@ -446,9 +446,23 @@ async function speak(scriptText, displayText) {
 // A silent "thinking…" bubble reads as unresponsive; this gives immediate
 // audible + visual feedback instead. The real reply's speak() call
 // interrupts this line (see stopSpeaking() in say()) once it's ready.
+// Deliberately NOT plain filler like "hold on a sec" — that read as too
+// noncommittal/vague. Each line reacts with a quick take first, then
+// commits to actually looking into it properly, so it feels engaged rather
+// than stalling.
 const ACK_LINES = {
-  ja: ["OK、調べてみるね。", "うんうん、ちょっと待ってね。", "了解、考えてみるよ。", "オッケー、確認するね。"],
-  en: ["OK, let me look into that.", "Got it, one moment.", "Sure, let me think about that.", "Alright, checking now."],
+  ja: [
+    "なるほど、気になるところだね。ちゃんと調べてから答えるね。",
+    "おっ、いい質問だね。しっかり調べてみるよ。",
+    "そこ、大事なとこだよね。ちゃんと確認してから話すね。",
+    "なるほどね。もう少し深掘りして調べてみるね。",
+  ],
+  en: [
+    "Good question — let me look into that properly.",
+    "Hmm, interesting one. Let me dig into that for you.",
+    "That's a good point — let me check it properly.",
+    "Got it, let me really look into that.",
+  ],
 };
 
 // Prefixes `answer` with the learner's own submitted text (when there is
