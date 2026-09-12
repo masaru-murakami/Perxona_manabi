@@ -1146,31 +1146,35 @@ async function onResult(result, domains, lang) {
   if (!config || config.mock || !config.chat) {
     say(
       lang === "ja"
-        ? `総合 ${result.score} 点（${result.correct} / 40問正解）。総評を使うには LLM_API_KEY を設定してください。`
-        : `Overall ${result.score} pts (${result.correct} / 40 correct). Set LLM_API_KEY to enable the spoken summary.`,
+        ? `総合 ${result.score} 点（${result.correct} / ${result.total}問正解）。総評を使うには LLM_API_KEY を設定してください。`
+        : `Overall ${result.score} pts (${result.correct} / ${result.total} correct). Set LLM_API_KEY to enable the spoken summary.`,
     );
     return;
   }
   await acknowledge(lang, lang === "ja" ? "総評を準備しています…" : "Preparing your summary…");
   try {
+    // Half the per-domain question count, rounded down — same "weak domain"
+    // threshold CFG.WEAK uses on the result screen itself (index.html), so
+    // the summary calls out the same domains the bar chart flags as low.
+    const weakAt = Math.floor(result.perDomain / 2);
     const breakdown = domains
-      .map((name, i) => `${name}: ${result.dom[i]}/4`)
+      .map((name, i) => `${name}: ${result.dom[i]}/${result.perDomain}`)
       .join(", ");
     const prompt =
       lang === "ja"
         ? [
             tutorPhrase(lang) + "模擬試験の結果を見て、口頭で励ましと弱点分析を伝えてください。",
-            `総合得点: ${result.score}点 / 100点（合格ライン70点）`,
-            `正答数: ${result.correct} / 40問`,
-            `分野別正答数（4問中）: ${breakdown}`,
-            "4問中2問以下の分野があれば重点的に指摘し、優しく励ましながら次にやるべきことを一言添えてください。3〜5文の自然な話し言葉で。Motion Markupは付けないでください。",
+            `総合得点: ${result.score}点 / 100点（合格ライン${result.pass}点）`,
+            `正答数: ${result.correct} / ${result.total}問`,
+            `分野別正答数（${result.perDomain}問中）: ${breakdown}`,
+            `${result.perDomain}問中${weakAt}問以下の分野があれば重点的に指摘し、優しく励ましながら次にやるべきことを一言添えてください。3〜5文の自然な話し言葉で。Motion Markupは付けないでください。`,
           ].join("\n")
         : [
             tutorPhrase(lang) + " Review this mock exam result with spoken encouragement and weak-point analysis.",
-            `Overall score: ${result.score} / 100 (pass mark 70)`,
-            `Correct: ${result.correct} / 40`,
-            `Per-domain correct (out of 4): ${breakdown}`,
-            "Call out any domain at or below 2/4 as a priority, encourage warmly, and suggest one next step. 3-5 spoken sentences. Do not add Motion Markup.",
+            `Overall score: ${result.score} / 100 (pass mark ${result.pass})`,
+            `Correct: ${result.correct} / ${result.total}`,
+            `Per-domain correct (out of ${result.perDomain}): ${breakdown}`,
+            `Call out any domain at or below ${weakAt}/${result.perDomain} as a priority, encourage warmly, and suggest one next step. 3-5 spoken sentences. Do not add Motion Markup.`,
           ].join("\n");
     const result_ = await requestJson("/api/demo-script", {
       method: "POST",

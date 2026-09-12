@@ -35,6 +35,18 @@
         "ja": "練習セット 全8回・オリジナル問題バンク150問",
         "en": "8 practice sets · 150-question original bank"
       }
+    },
+    {
+      "id": "it-passport",
+      "file": "it-passport.json",
+      "title": {
+        "ja": "ITパスポート試験",
+        "en": "IT Passport Examination"
+      },
+      "summary": {
+        "ja": "模擬試験 全10回・IPA公表の過去問418問(日本語のみ)",
+        "en": "10 mock exams · 418 official past questions (Japanese only)"
+      }
     }
   ]
 }
